@@ -18,20 +18,34 @@ OCCASIONS = [
     {"name": "Festival", "description": "Seasonal or cultural celebration greeting"}
 ]
 
-def seed():
-    app = create_app()
+def seed(app=None):
+    from sqlalchemy.orm import sessionmaker
+    
+    if app is None:
+        app = create_app()
+        
     with app.app_context():
         print("Seeding occasions lookup data...")
-        count = 0
-        for item in OCCASIONS:
-            existing = Occasion.query.filter_by(name=item["name"]).first()
-            if not existing:
-                occasion = Occasion(name=item["name"], description=item["description"])
-                db.session.add(occasion)
-                count += 1
-                
-        db.session.commit()
-        print(f"Successfully seeded {count} new occasions.")
+        # Create a fresh, independent session using the application's engine
+        Session = sessionmaker(bind=db.engine)
+        session = Session()
+        try:
+            count = 0
+            for item in OCCASIONS:
+                existing = session.query(Occasion).filter_by(name=item["name"]).first()
+                if not existing:
+                    occasion = Occasion(name=item["name"], description=item["description"])
+                    session.add(occasion)
+                    count += 1
+            session.commit()
+            print(f"Successfully seeded {count} new occasions.")
+        except Exception as e:
+            session.rollback()
+            print(f"Error seeding occasions: {e}")
+            raise e
+        finally:
+            session.close()
+
 
 if __name__ == '__main__':
     seed()

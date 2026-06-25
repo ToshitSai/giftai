@@ -31,7 +31,13 @@ class Config:
     SQLALCHEMY_DATABASE_URI = f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
-    # AI Service Credentials
+    # Configure SQLAlchemy with pool_pre_ping=True and pool_recycle=300 for Aiven MySQL compatibility
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        "pool_pre_ping": True,
+        "pool_recycle": 300
+    }
 
+    # AI Service Credentials
     GROQ_API_KEY = os.getenv('GROQ_API_KEY')
+
     

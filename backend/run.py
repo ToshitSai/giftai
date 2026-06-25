@@ -20,11 +20,14 @@ with app.app_context():
     print("✅ Database tables created")
     from app.seed.seed_tones import seed as seed_tones
     from app.seed.seed_occasions import seed as seed_occasions
-
-seed_tones()
-seed_occasions()
+    
+    # Run the seeders inside the application context, passing the app instance
+    # to reuse the same database engine, connection pool, and application context.
+    seed_tones(app)
+    seed_occasions(app)
 
 print("Lookup tables seeded")
+
 
 if __name__ == '__main__':
     # Get port from environment variables or default to 5000

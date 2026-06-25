@@ -19,20 +19,34 @@ TONES = [
     {"name": "Inspirational", "description": "Motivational and uplifting in tone"}
 ]
 
-def seed():
-    app = create_app()
+def seed(app=None):
+    from sqlalchemy.orm import sessionmaker
+    
+    if app is None:
+        app = create_app()
+        
     with app.app_context():
         print("Seeding tones lookup data...")
-        count = 0
-        for item in TONES:
-            existing = Tone.query.filter_by(name=item["name"]).first()
-            if not existing:
-                tone = Tone(name=item["name"], description=item["description"])
-                db.session.add(tone)
-                count += 1
-                
-        db.session.commit()
-        print(f"Successfully seeded {count} new tones.")
+        # Create a fresh, independent session using the application's engine
+        Session = sessionmaker(bind=db.engine)
+        session = Session()
+        try:
+            count = 0
+            for item in TONES:
+                existing = session.query(Tone).filter_by(name=item["name"]).first()
+                if not existing:
+                    tone = Tone(name=item["name"], description=item["description"])
+                    session.add(tone)
+                    count += 1
+            session.commit()
+            print(f"Successfully seeded {count} new tones.")
+        except Exception as e:
+            session.rollback()
+            print(f"Error seeding tones: {e}")
+            raise e
+        finally:
+            session.close()
+
 
 if __name__ == '__main__':
     seed()
