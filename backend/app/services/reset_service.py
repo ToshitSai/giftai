@@ -42,8 +42,14 @@ def send_otp_email(email, otp):
     Verifies that the API key and Sender Email are loaded from environment variables.
     Logs HTTP response status and body, and logs any HTTPError or URLError.
     """
+    # [DEBUG LOG] Entering send_otp_email()
+    print(f"[DEBUG LOG] Entering send_otp_email() for email: {email}", flush=True)
+
     api_key = os.getenv("RESEND_API_KEY")
     from_email = os.getenv("RESEND_FROM_EMAIL")
+
+    # [DEBUG LOG] Environment variables loaded
+    print(f"[DEBUG LOG] Environment variables loaded. RESEND_API_KEY: {'present' if api_key else 'missing'}, RESEND_FROM_EMAIL: {from_email}", flush=True)
 
     # Verify that RESEND_API_KEY and RESEND_FROM_EMAIL are successfully loaded
     missing_vars = []
@@ -55,10 +61,6 @@ def send_otp_email(email, otp):
     if missing_vars:
         error_msg = f"[EMAIL ERROR] Missing environment variable(s): {', '.join(missing_vars)}."
         print(error_msg, flush=True)
-        # Log the generated OTP to the console as a development fallback
-        print("\n" + "="*60, flush=True)
-        print(f"[SECURITY RESET OTP - DEV CONSOLE LOG] Code: {otp} for {email}", flush=True)
-        print("="*60 + "\n", flush=True)
         return False, error_msg
 
     print(f"[EMAIL INFO] Executing request to https://api.resend.com/emails to send OTP to {email}...", flush=True)
@@ -98,15 +100,28 @@ WishForge Team"""
         method="POST"
     )
 
+    # [DEBUG LOG] HTTP request created
+    print(f"[DEBUG LOG] HTTP request created. URL: {url}, Method: POST, Headers: {list(headers.keys())}", flush=True)
+
     try:
+        # [DEBUG LOG] Request sent
+        print("[DEBUG LOG] Sending HTTP request to Resend API...", flush=True)
         with urllib.request.urlopen(req, timeout=10) as response:
             status_code = response.status
+            # [DEBUG LOG] Response status received
+            print(f"[DEBUG LOG] Response status received: {status_code}", flush=True)
+            
             response_body = response.read().decode("utf-8")
+            # [DEBUG LOG] Response body received
+            print(f"[DEBUG LOG] Response body received: {response_body}", flush=True)
+            
             print(f"[RESEND SUCCESS] API HTTP Status Code: {status_code}", flush=True)
             print(f"[RESEND SUCCESS] API Response Body: {response_body}", flush=True)
             return True, "Email sent successfully."
             
     except urllib.error.HTTPError as e:
+        # [DEBUG LOG] Any exception raised
+        print(f"[DEBUG LOG] Exception raised during email sending (HTTPError): {str(e)}", flush=True)
         status_code = e.code
         try:
             error_body = e.read().decode("utf-8")
@@ -117,11 +132,15 @@ WishForge Team"""
         return False, f"Email service is temporarily unavailable. Please try again later."
         
     except urllib.error.URLError as e:
+        # [DEBUG LOG] Any exception raised
+        print(f"[DEBUG LOG] Exception raised during email sending (URLError): {str(e)}", flush=True)
         error_msg = f"[RESEND URLError] Failed to reach server. Reason: {e.reason}"
         print(error_msg, flush=True)
         return False, "Email service is temporarily unavailable. Please try again later."
         
     except Exception as e:
+        # [DEBUG LOG] Any exception raised
+        print(f"[DEBUG LOG] Exception raised during email sending (General): {str(e)}", flush=True)
         error_msg = f"[RESEND EXCEPTION] Unexpected error occurred: {str(e)}"
         print(error_msg, flush=True)
         return False, "Email service is temporarily unavailable. Please try again later."
@@ -160,6 +179,9 @@ def generate_and_send_otp(customer):
     otp = ''.join(secrets.choice(string.digits) for _ in range(6))
     hashed_otp = hash_otp(otp)
 
+    # [DEBUG LOG] OTP generated
+    print("[DEBUG LOG] OTP generated successfully.", flush=True)
+
     # 6. Save OTP record to database
     otp_record = OTPVerification(
         user_id=customer.id,
@@ -169,12 +191,16 @@ def generate_and_send_otp(customer):
     db.session.add(otp_record)
     db.session.commit()
 
+    # [DEBUG LOG] OTP stored successfully
+    print("[DEBUG LOG] OTP stored successfully in database.", flush=True)
+
     # 7. Send the email using send_otp_email helper
     email_success, email_msg = send_otp_email(customer.email, otp)
     if not email_success:
         return False, email_msg
 
     return True, otp
+
 
 
 def verify_otp_record(email, otp_val):

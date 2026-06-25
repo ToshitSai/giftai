@@ -10,7 +10,9 @@ from app import limiter
 auth_bp = Blueprint('auth_routes', __name__)
 
 @auth_bp.route('/login', methods=['POST'])
+@limiter.limit(lambda: current_app.config.get('LIMIT_LOGIN', '5 per 15 minutes'))
 def login():
+
     """
     POST /api/auth/login
     Authenticates a user or administrator.
@@ -204,21 +206,13 @@ def forgot_password():
                 # Keep the message clean as requested by the user
                 return error_response(result, 500)
                 
-        # Determine if we should return the raw OTP in the API response (ONLY in development/debug mode)
-        is_dev = current_app.debug or (os.getenv('FLASK_ENV', 'development').lower() != 'production')
-        response_data = {
+        return success_response({
             "message": "If an account exists for this email, a verification code has been sent."
-        }
-        
-        if is_dev:
-            # Include dev_otp for automated testing convenience
-            response_data["dev_otp"] = result
-            
-        return success_response(response_data)
-        
+        })
     except Exception as e:
         db.session.rollback()
         return error_response("Email service is temporarily unavailable. Please try again later.", 500)
+
 
 
 @auth_bp.route('/verify-reset-code', methods=['POST'])

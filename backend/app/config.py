@@ -16,9 +16,22 @@ class Config:
     LIMIT_AI_GENERATION = os.getenv('LIMIT_AI_GENERATION', '10 per minute')
     LIMIT_AUTH = os.getenv('LIMIT_AUTH', '10 per 5 minutes')
     LIMIT_ADMIN = os.getenv('LIMIT_ADMIN', '30 per minute')
-    LIMIT_FORGOT_PASSWORD = os.getenv('LIMIT_FORGOT_PASSWORD', '5 per 15 minutes')
+
+    # Detect if we are in development/debug mode
+    _flask_env = os.getenv('FLASK_ENV', 'development').lower()
+    _flask_debug = os.getenv('FLASK_DEBUG', 'False').lower() in ['true', '1', 't']
+    _is_dev = (_flask_env == 'development') or _flask_debug
+
+    if _is_dev:
+        LIMIT_FORGOT_PASSWORD = os.getenv('LIMIT_FORGOT_PASSWORD', '50 per minute')
+        LIMIT_LOGIN = os.getenv('LIMIT_LOGIN', '50 per minute')
+    else:
+        LIMIT_FORGOT_PASSWORD = os.getenv('LIMIT_FORGOT_PASSWORD', '5 per 15 minutes')
+        LIMIT_LOGIN = os.getenv('LIMIT_LOGIN', '5 per 15 minutes')
+
     LIMIT_VALIDATE_OTP = os.getenv('LIMIT_VALIDATE_OTP', '20 per 15 minutes')
     LIMIT_RESET_PASSWORD = os.getenv('LIMIT_RESET_PASSWORD', '10 per 15 minutes')
+
 
     # Database Configuration
     DB_USER = os.getenv('DB_USER', 'root')
