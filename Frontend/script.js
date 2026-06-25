@@ -24,9 +24,11 @@
 const html = window.htm.bind(React.createElement);
 
 // API Service Layer
-const API_BASE = 'https://giftai-backend-kpkw.onrender.com/api';
+const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || !window.location.hostname)
+    ? 'http://localhost:5000/api'
+    : 'https://giftai-backend-kpkw.onrender.com/api';
 const request = async (url, options = {}) => {
-    const sessionStr = sessionStorage.getItem('giftai_session');
+    const sessionStr = sessionStorage.getItem('wishforge_session');
     let headers = options.headers || {};
     if (sessionStr) {
         try {
@@ -50,7 +52,7 @@ const request = async (url, options = {}) => {
     });
     
     if (res.status === 401) {
-        sessionStorage.removeItem('giftai_session');
+        sessionStorage.removeItem('wishforge_session');
         window.dispatchEvent(new CustomEvent('auth-failed'));
         const errData = await res.json().catch(() => ({}));
         return { success: false, error: errData.error || 'Session expired. Please log in again.' };
@@ -133,10 +135,11 @@ const ApiService = {
     async getMessages(queryParams = '') {
         return request(`${API_BASE}/messages${queryParams}`);
     },
-    async login(email, password, isAdmin) {
+    async login(email, password, isAdmin, signal) {
         return request(`${API_BASE}/auth/login`, {
             method: 'POST',
-            body: JSON.stringify({ email, password, isAdmin })
+            body: JSON.stringify({ email, password, isAdmin }),
+            signal
         });
     },
     async register(name, email, password) {
@@ -187,9 +190,7 @@ const {
     Legend: ReLegend,
     PieChart, 
     Pie, 
-    Cell,
-    LineChart,
-    Line
+    Cell
 } = window.Recharts || {};
 
 // App Level Contexts
@@ -224,7 +225,7 @@ const pageTransition = {
 // Local Activity Logging Helper
 const logActivity = (type, details) => {
     try {
-        const session = sessionStorage.getItem('giftai_session');
+        const session = sessionStorage.getItem('wishforge_session');
         let email = 'system';
         if (session) {
             try {
@@ -232,7 +233,7 @@ const logActivity = (type, details) => {
                 email = parsed.user.email.toLowerCase();
             } catch(e) {}
         }
-        const key = `giftai_activities_${email}`;
+        const key = `wishforge_activities_${email}`;
         const activities = JSON.parse(localStorage.getItem(key) || '[]');
         activities.unshift({
             id: Date.now() + Math.random().toString(36).substr(2, 5),
@@ -257,14 +258,14 @@ function AuthProvider({ children }) {
 
     useEffect(() => {
         // Restore session on mount
-        const session = sessionStorage.getItem('giftai_session');
+        const session = sessionStorage.getItem('wishforge_session');
         if (session) {
             try {
                 const parsed = JSON.parse(session);
                 setCurrentUser(parsed.user);
                 setRole(parsed.role);
             } catch (e) {
-                sessionStorage.removeItem('giftai_session');
+                sessionStorage.removeItem('wishforge_session');
             }
         }
         setLoading(false);
@@ -273,7 +274,7 @@ function AuthProvider({ children }) {
     // Scoped notifications sync
     useEffect(() => {
         if (currentUser) {
-            const key = `giftai_notifs_${currentUser.email.toLowerCase()}`;
+            const key = `wishforge_notifs_${currentUser.email.toLowerCase()}`;
             const saved = localStorage.getItem(key);
             if (saved) {
                 try {
@@ -286,7 +287,7 @@ function AuthProvider({ children }) {
                     {
                         id: 'seed-1',
                         type: 'alert',
-                        title: 'Welcome to GiftAI',
+                        title: 'Welcome to WishForge',
                         message: `Welcome to your AI greeting workspace, ${currentUser.name}! Composing templates will log events here.`,
                         read: false,
                         timestamp: new Date().toISOString()
@@ -311,7 +312,7 @@ function AuthProvider({ children }) {
     const saveNotifs = (list) => {
         setNotifications(list);
         if (currentUser) {
-            const key = `giftai_notifs_${currentUser.email.toLowerCase()}`;
+            const key = `wishforge_notifs_${currentUser.email.toLowerCase()}`;
             localStorage.setItem(key, JSON.stringify(list));
         }
     };
@@ -336,9 +337,9 @@ function AuthProvider({ children }) {
         saveNotifs([]);
     };
 
-    const login = async (email, password, isAdmin) => {
+    const login = async (email, password, isAdmin, signal) => {
         try {
-            const res = await ApiService.login(email, password, isAdmin);
+            const res = await ApiService.login(email, password, isAdmin, signal);
             if (res.success && res.data) {
                 const { user, role, token } = res.data;
                 const userObj = {
@@ -348,7 +349,7 @@ function AuthProvider({ children }) {
                 const sessionObj = { user: userObj, role, token };
                 setCurrentUser(userObj);
                 setRole(role);
-                sessionStorage.setItem('giftai_session', JSON.stringify(sessionObj));
+                sessionStorage.setItem('wishforge_session', JSON.stringify(sessionObj));
                 return { success: true };
             } else {
                 return { success: false, error: res.error || 'Invalid credentials' };
@@ -366,7 +367,7 @@ function AuthProvider({ children }) {
                 const sessionObj = { user, role, token };
                 setCurrentUser(user);
                 setRole(role);
-                sessionStorage.setItem('giftai_session', JSON.stringify(sessionObj));
+                sessionStorage.setItem('wishforge_session', JSON.stringify(sessionObj));
                 return { success: true };
             } else {
                 return { success: false, error: res.error || 'Failed to register account.' };
@@ -380,7 +381,7 @@ function AuthProvider({ children }) {
         setCurrentUser(null);
         setRole(null);
         setNotifications([]);
-        sessionStorage.removeItem('giftai_session');
+        sessionStorage.removeItem('wishforge_session');
     };
 
     useEffect(() => {
@@ -435,6 +436,98 @@ function ProtectedRoute({ children, adminOnly = false }) {
 // ============================================================
 // AUTHENTICATION split-screen page
 // ============================================================
+// ============================================================
+// WISHFORGE BRAND LOGO (SVG)
+// ============================================================
+function WishForgeLogo({ size = 24 }) {
+    return html`
+        <svg 
+            width=${size} 
+            height=${size} 
+            viewBox="0 0 24 24" 
+            fill="none" 
+            xmlns="http://www.w3.org/2000/svg"
+            style=${{ display: 'inline-block', verticalAlign: 'middle' }}
+        >
+            <!-- Stylized W (ribbon style) -->
+            <path 
+                d="M3 6L7.5 18L11 8.5L14.5 18L19 6" 
+                stroke="url(#wf-logo-grad)" 
+                strokeWidth="2.5" 
+                strokeLinecap="round" 
+                strokeLinejoin="round"
+            />
+            <!-- Sparkle/Magic element in the top right -->
+            <path 
+                d="M18 5.5C18 5.5 19 6 19.5 6C19 6.5 18.5 7 18.5 7C18.5 7 18 6.5 17.5 6.5C18 6 18 5.5 18 5.5Z" 
+                fill="url(#wf-sparkle-grad)" 
+                stroke="none"
+            />
+            <defs>
+                <linearGradient id="wf-logo-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#2563EB" />
+                    <stop offset="100%" stopColor="#1D4ED8" />
+                </linearGradient>
+                <linearGradient id="wf-sparkle-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#F59E0B" />
+                    <stop offset="100%" stopColor="#D97706" />
+                </linearGradient>
+            </defs>
+        </svg>
+    `;
+}
+
+// ============================================================
+// LOCAL STORAGE KEY MIGRATION (GiftAI -> WishForge)
+// ============================================================
+(function migrateLocalStorage() {
+    try {
+        // 1. Session storage session
+        const oldSession = sessionStorage.getItem('wishforge_session');
+        if (oldSession && !sessionStorage.getItem('wishforge_session')) {
+            sessionStorage.setItem('wishforge_session', oldSession);
+            sessionStorage.removeItem('wishforge_session');
+        }
+        
+        // 2. Deleted messages
+        const oldDeleted = localStorage.getItem('wishforge_deleted_messages');
+        if (oldDeleted && !localStorage.getItem('wishforge_deleted_messages')) {
+            localStorage.setItem('wishforge_deleted_messages', oldDeleted);
+            localStorage.removeItem('wishforge_deleted_messages');
+        }
+
+        // 3. Favorites list
+        const oldFavs = localStorage.getItem('wishforge_fav_messages');
+        if (oldFavs && !localStorage.getItem('wishforge_fav_messages')) {
+            localStorage.setItem('wishforge_fav_messages', oldFavs);
+            localStorage.removeItem('wishforge_fav_messages');
+        }
+
+        // 4. User notifications and activities
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key) {
+                if (key.startsWith('giftai_notifs_')) {
+                    const newKey = key.replace('giftai_notifs_', 'wishforge_notifs_');
+                    if (!localStorage.getItem(newKey)) {
+                        localStorage.setItem(newKey, localStorage.getItem(key));
+                    }
+                    localStorage.removeItem(key);
+                }
+                if (key.startsWith('giftai_activities_')) {
+                    const newKey = key.replace('giftai_activities_', 'wishforge_activities_');
+                    if (!localStorage.getItem(newKey)) {
+                        localStorage.setItem(newKey, localStorage.getItem(key));
+                    }
+                    localStorage.removeItem(key);
+                }
+            }
+        }
+    } catch (e) {
+        console.error('Storage migration failed:', e);
+    }
+})();
+
 function AuthPage() {
     const { login, register, currentUser, role } = useContext(AuthContext);
     const { showToast } = useContext(ToastContext);
@@ -448,6 +541,8 @@ function AuthPage() {
     const [password, setPassword] = useState('');
     const [rememberMe, setRememberMe] = useState(true);
     const [authLoading, setAuthLoading] = useState(false);
+    const [statusMessage, setStatusMessage] = useState('Sign In');
+    const abortControllerRef = useRef(null);
 
     useEffect(() => {
         if (currentUser && role) {
@@ -459,26 +554,76 @@ function AuthPage() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (authLoading) return;
+
+        // Cancel previous request if exists
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
+        }
+        const controller = new AbortController();
+        abortControllerRef.current = controller;
+
         setAuthLoading(true);
+        setStatusMessage('Authenticating...');
+
+        const loginStartTime = performance.now();
+        console.log(`[Perf Log] Login request started at ${loginStartTime.toFixed(2)}ms`);
+
+        // Set timers for perceived progress feedback
+        const timer500 = setTimeout(() => {
+            setStatusMessage('Authenticating... ⏳ Verifying credentials...');
+        }, 500);
+
+        const timerTimeout = setTimeout(() => {
+            setStatusMessage('Connection is taking longer than expected...');
+        }, 15000);
 
         if (isLoginMode) {
-            const res = await login(email, password, isAdminLogin);
-            if (res.success) {
-                showToast(isAdminLogin ? "Admin logged in successfully!" : "Logged in successfully!");
-                navigate(isAdminLogin ? '/admin' : '/dashboard', { replace: true });
-            } else {
-                showToast(res.error, true);
+            try {
+                // Pass signal to login request
+                const res = await login(email, password, isAdminLogin, controller.signal);
+                clearTimeout(timer500);
+                clearTimeout(timerTimeout);
+
+                if (res.success) {
+                    const loginEndTime = performance.now();
+                    console.log(`[Perf Log] Login API resolved in ${(loginEndTime - loginStartTime).toFixed(2)}ms`);
+                    setStatusMessage('✓ Welcome back!');
+                    showToast(isAdminLogin ? "Admin logged in successfully!" : "Logged in successfully!");
+                    // Navigate immediately after success
+                    navigate(isAdminLogin ? '/admin' : '/dashboard', { replace: true });
+                } else {
+                    showToast(res.error, true);
+                    setAuthLoading(false);
+                }
+            } catch (err) {
+                clearTimeout(timer500);
+                clearTimeout(timerTimeout);
+                if (err.name !== 'AbortError') {
+                    showToast(err.message || 'Failed to authenticate.', true);
+                    setAuthLoading(false);
+                }
             }
         } else {
-            const res = await register(name, email, password);
-            if (res.success) {
-                showToast("Account registered successfully!");
-                navigate('/dashboard', { replace: true });
-            } else {
-                showToast(res.error, true);
+            // For register
+            try {
+                const res = await register(name, email, password);
+                clearTimeout(timer500);
+                clearTimeout(timerTimeout);
+                if (res.success) {
+                    showToast("Account registered successfully!");
+                    navigate('/dashboard', { replace: true });
+                } else {
+                    showToast(res.error, true);
+                    setAuthLoading(false);
+                }
+            } catch (err) {
+                clearTimeout(timer500);
+                clearTimeout(timerTimeout);
+                showToast(err.message || 'Registration failed.', true);
+                setAuthLoading(false);
             }
         }
-        setAuthLoading(false);
     };
 
     const handleForgotPassword = (e) => {
@@ -493,11 +638,11 @@ function AuthPage() {
                 <div class="aurora-glow glow-1"></div>
                 <div class="aurora-glow glow-2"></div>
                 <div class="auth-brand">
-                    <div class="logo-mark"><i data-lucide="sparkles"></i></div>
-                    <span>Gift<span>AI</span></span>
+                    <div class="logo-mark" style=${{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}><${WishForgeLogo} size=${28} /></div>
+                    <span>Wish<span>Forge</span></span>
                 </div>
-                <h1>Expressing emotions, powered by intelligence.</h1>
-                <p>Generate highly personalized greeting templates for birthdays, anniversaries, thank you notes, and corporate settings in seconds.</p>
+                <h1>AI-powered greetings, thoughtfully crafted.</h1>
+                <p>Craft personalized messages with AI. Generate highly customized greeting templates for birthdays, anniversaries, thank you notes, and corporate settings in seconds.</p>
             </div>
 
             <!-- Right Split Panel -->
@@ -513,8 +658,8 @@ function AuthPage() {
                     <!-- Toggle Admin vs User Login -->
                     ${isLoginMode && html`
                         <div class="auth-toggle-container">
-                            <button class="auth-toggle-btn ${!isAdminLogin ? 'active' : ''}" onClick=${() => setIsAdminLogin(false)}>User Login</button>
-                            <button class="auth-toggle-btn ${isAdminLogin ? 'active' : ''}" onClick=${() => setIsAdminLogin(true)}>Admin Portal</button>
+                            <button class="auth-toggle-btn ${!isAdminLogin ? 'active' : ''}" onClick=${() => setIsAdminLogin(false)} disabled=${authLoading}>User Login</button>
+                            <button class="auth-toggle-btn ${isAdminLogin ? 'active' : ''}" onClick=${() => setIsAdminLogin(true)} disabled=${authLoading}>Admin Portal</button>
                         </div>
                     `}
 
@@ -524,7 +669,7 @@ function AuthPage() {
                                 <label>Full Name</label>
                                 <div class="input-with-icon">
                                     <i data-lucide="user"></i>
-                                    <input type="text" placeholder="John Doe" value=${name} onChange=${e => setName(e.target.value)} required />
+                                    <input type="text" placeholder="John Doe" value=${name} onChange=${e => setName(e.target.value)} required disabled=${authLoading} />
                                 </div>
                             </div>
                         `}
@@ -533,7 +678,7 @@ function AuthPage() {
                             <label>Email Address</label>
                             <div class="input-with-icon">
                                 <i data-lucide="mail"></i>
-                                <input type="email" placeholder="name@domain.com" value=${email} onChange=${e => setEmail(e.target.value)} required />
+                                <input type="email" placeholder="name@domain.com" value=${email} onChange=${e => setEmail(e.target.value)} required disabled=${authLoading} />
                             </div>
                         </div>
 
@@ -541,31 +686,31 @@ function AuthPage() {
                             <label>Password</label>
                             <div class="input-with-icon">
                                 <i data-lucide="lock"></i>
-                                <input type="password" placeholder="••••••••" value=${password} onChange=${e => setPassword(e.target.value)} required />
+                                <input type="password" placeholder="••••••••" value=${password} onChange=${e => setPassword(e.target.value)} required disabled=${authLoading} />
                             </div>
                         </div>
 
                         ${isLoginMode && html`
                             <div class="auth-form-footer" style=${{ marginTop: '1rem' }}>
                                 <label style=${{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}>
-                                    <input type="checkbox" checked=${rememberMe} onChange=${e => setRememberMe(e.target.checked)} />
+                                    <input type="checkbox" checked=${rememberMe} onChange=${e => setRememberMe(e.target.checked)} disabled=${authLoading} />
                                     Remember Me
                                 </label>
-                                <a href="#" onClick=${(e) => { e.preventDefault(); navigate('/forgot-password'); }}>Forgot Password?</a>
+                                <a href="#" onClick=${(e) => { e.preventDefault(); if (!authLoading) navigate('/forgot-password'); }}>Forgot Password?</a>
                             </div>
                         `}
 
                         <button type="submit" class="btn-primary" style=${{ width: '100%' }} disabled=${authLoading}>
-                            <span>${authLoading ? 'Authenticating...' : isLoginMode ? 'Sign In' : 'Sign Up'}</span>
+                            <span>${authLoading ? statusMessage : (isLoginMode ? 'Sign In' : 'Sign Up')}</span>
                             ${authLoading && html`<div class="spinner"></div>`}
                         </button>
                     </form>
 
                     <div class="auth-switch-prompt">
                         ${isLoginMode ? (isAdminLogin ? null : html`
-                            Don't have an account? <button onClick=${() => { setIsLoginMode(false); setIsAdminLogin(false); }}>Sign Up</button>
+                            Don't have an account? <button onClick=${() => { if (!authLoading) { setIsLoginMode(false); setIsAdminLogin(false); } }} disabled=${authLoading}>Sign Up</button>
                         `) : html`
-                            Already have an account? <button onClick=${() => setIsLoginMode(true)}>Sign In</button>
+                            Already have an account? <button onClick=${() => { if (!authLoading) setIsLoginMode(true); }} disabled=${authLoading}>Sign In</button>
                         `}
                     </div>
                 </div>
@@ -738,8 +883,8 @@ function ForgotPasswordPage() {
                 <div class="aurora-glow glow-1"></div>
                 <div class="aurora-glow glow-2"></div>
                 <div class="auth-brand">
-                    <div class="logo-mark"><i data-lucide="sparkles"></i></div>
-                    <span>Gift<span>AI</span></span>
+                    <div class="logo-mark" style=${{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}><${WishForgeLogo} size=${28} /></div>
+                    <span>Wish<span>Forge</span></span>
                 </div>
                 <h1>Security & Recovery Portal</h1>
                 <p>Recover your credentials to continue customizing AI greetings.</p>
@@ -916,16 +1061,38 @@ function AppContent() {
     // Load bootstrap lists
     const loadBootstrapData = async () => {
         try {
+            // CRITICAL FIX: Load occasions and tones FIRST in their own Promise.all
+            // completely separated from stats (which requires auth and can return 401).
+            // A 401 on stats fires auth-failed which wipes state — this prevents that
+            // from blocking the dropdown data.
             const [occRes, toneRes] = await Promise.all([
                 ApiService.getOccasions(),
                 ApiService.getTones()
             ]);
+
             setOccasions(occRes.data || []);
             setTones(toneRes.data || []);
 
-            let custRes;
+            // Load stats separately so its 401 doesn't affect occasions/tones
+            const statsRes = await ApiService.getStats().catch(() => ({ success: false }));
+            if (statsRes.success) setStats(statsRes.data);
+
+            let recipientsPromise;
+            let customersPromise;
+
             if (role === 'admin') {
-                custRes = await ApiService.getCustomers();
+                customersPromise = ApiService.getCustomers();
+            } else if (currentUser) {
+                const targetCustId = currentUser.id;
+                recipientsPromise = ApiService.getRecipients(`?customer_id=${targetCustId}`);
+            }
+
+            // Dummy statsRes for legacy code compatibility
+            const statsRes_compat = statsRes;
+
+            let custRes;
+            if (role === 'admin' && customersPromise) {
+                custRes = await customersPromise;
                 if (!custRes.data || custRes.data.length === 0) {
                     const seeded = await ApiService.createCustomer("Internship Reviewer", "reviewer@paperplane.com");
                     custRes = { success: true, data: [seeded.data] };
@@ -960,28 +1127,32 @@ function AppContent() {
                 }
             }
 
-            let q_rec = '';
-            if (currentUser && (role === 'user' || (role === 'admin' && workspaceCustomer !== 'all'))) {
-                const targetCustId = role === 'admin' ? workspaceCustomer : currentUser.id;
-                q_rec = `?customer_id=${targetCustId}`;
+            let filteredRecipients = [];
+            if (role === 'admin') {
+                let q_rec = '';
+                if (workspaceCustomer !== 'all') {
+                    q_rec = `?customer_id=${workspaceCustomer}`;
+                }
+                const recRes = await ApiService.getRecipients(q_rec);
+                filteredRecipients = recRes.data || [];
+            } else if (recipientsPromise) {
+                const recRes = await recipientsPromise;
+                filteredRecipients = recRes.data || [];
             }
-            let recRes = await ApiService.getRecipients(q_rec);
-            if (!recRes.data || recRes.data.length === 0) {
+
+            if (filteredRecipients.length === 0) {
                 const targetCustId = (currentUser && (role === 'user' || (role === 'admin' && workspaceCustomer !== 'all')))
                     ? (role === 'admin' ? workspaceCustomer : currentUser.id)
-                    : custRes.data[0].id;
+                    : (custRes.data && custRes.data[0] ? custRes.data[0].id : 1);
                 const seededRec = await ApiService.createRecipient(targetCustId, "Aunt Sarah", "Aunt");
-                recRes = { success: true, data: [seededRec.data] };
+                filteredRecipients = [seededRec.data];
             }
-            let filteredRecipients = recRes.data || [];
+
             if (currentUser && (role === 'user' || (role === 'admin' && workspaceCustomer !== 'all'))) {
                 const targetCustId = role === 'admin' ? workspaceCustomer : currentUser.id;
-                filteredRecipients = filteredRecipients.filter(r => r.customer_id === targetCustId);
+                filteredRecipients = filteredRecipients.filter(r => r && r.customer_id === targetCustId);
             }
             setRecipients(filteredRecipients);
-
-            const statsRes = await ApiService.getStats();
-            if (statsRes.success) setStats(statsRes.data);
 
         } catch (err) {
             console.error(err);
@@ -995,14 +1166,7 @@ function AppContent() {
             loadBootstrapData();
         }
         
-        const handleKeys = (e) => {
-            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
-                e.preventDefault();
-                setIsPaletteOpen(prev => !prev);
-            }
-        };
-        window.addEventListener('keydown', handleKeys);
-        return () => window.removeEventListener('keydown', handleKeys);
+
     }, [currentUser, workspaceCustomer]);
 
     const value = {
@@ -1074,10 +1238,10 @@ function ForceResetPasswordModal() {
             if (res.success) {
                 showToast("Password updated successfully!");
                 // Update local session
-                const session = JSON.parse(sessionStorage.getItem('giftai_session') || '{}');
+                const session = JSON.parse(sessionStorage.getItem('wishforge_session') || '{}');
                 if (session.user) {
                     session.user.password_reset_required = false;
-                    sessionStorage.setItem('giftai_session', JSON.stringify(session));
+                    sessionStorage.setItem('wishforge_session', JSON.stringify(session));
                 }
                 setCurrentUser(prev => ({
                     ...prev,
@@ -1223,6 +1387,18 @@ function Layout() {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const location = useLocation();
 
+    // Lock body scroll when mobile menu is open
+    useEffect(() => {
+        if (isMobileMenuOpen && window.innerWidth <= 1024) {
+            document.body.classList.add('mobile-menu-open');
+        } else {
+            document.body.classList.remove('mobile-menu-open');
+        }
+        return () => {
+            document.body.classList.remove('mobile-menu-open');
+        };
+    }, [isMobileMenuOpen]);
+
     // Trigger icon generation on routes mount
     useEffect(() => {
         if (window.lucide) window.lucide.createIcons();
@@ -1231,6 +1407,11 @@ function Layout() {
     return html`
         <!-- Left Sidebar -->
         <${Sidebar} isOpen=${isMobileMenuOpen} onClose=${() => setIsMobileMenuOpen(false)} />
+
+        <!-- Mobile Sidebar Backdrop -->
+        ${isMobileMenuOpen && html`
+            <div class="sidebar-mobile-backdrop" onClick=${() => setIsMobileMenuOpen(false)}></div>
+        `}
 
         <!-- Main Wrapper -->
         <div class="main-container">
@@ -1312,8 +1493,8 @@ function Sidebar({ isOpen, onClose }) {
         <aside class="sidebar ${isOpen ? 'open' : ''} ${isCollapsed ? 'collapsed' : ''}" id="sidebar">
             <div class="sidebar-header">
                 <div class="logo-container">
-                    <div class="logo-mark"><i data-lucide="sparkles"></i></div>
-                    <span class="logo-text">Gift<span>AI</span></span>
+                    <div class="logo-mark" style=${{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}><${WishForgeLogo} size=${24} /></div>
+                    <span class="logo-text">Wish<span>Forge</span></span>
                 </div>
                 <button class="sidebar-collapse-toggle" onClick=${() => setIsCollapsed(!isCollapsed)} title=${isCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'} style=${{ display: 'inline-flex' }}>
                     <i data-lucide=${isCollapsed ? 'chevron-right' : 'chevron-left'} style=${{ width: '14px', height: '14px' }}></i>
@@ -1434,12 +1615,14 @@ function Navbar({ onOpenMenu }) {
                 </button>
                 <button class="search-trigger" onClick=${() => setIsPaletteOpen(true)} aria-label="Search or command palette">
                     <i data-lucide="search"></i>
-                    <span>Search commands...</span>
-                    <kbd>Ctrl K</kbd>
+                    <span>Search messages...</span>
                 </button>
             </div>
 
             <div class="navbar-right">
+                <button class="mobile-plus-btn" onClick=${() => navigate('/generate')} aria-label="Create new message">
+                    <i data-lucide="plus"></i>
+                </button>
                 <!-- Notifications dropdown -->
                 <div class="notification-dropdown">
                     <button class="nav-icon-btn" onClick=${() => setNotifOpen(!notifOpen)} aria-label="Notifications" aria-expanded=${notifOpen}>
@@ -1673,7 +1856,7 @@ function DashboardPage() {
             const res = await ApiService.getMessages(q);
             if (res.success && res.data) {
                 const list = res.data;
-                const deletedIds = JSON.parse(localStorage.getItem('giftai_deleted_messages') || '[]');
+                const deletedIds = JSON.parse(localStorage.getItem('wishforge_deleted_messages') || '[]');
                 const activeList = list.filter(m => !deletedIds.includes(m.id));
                 
                 // Map names from context lists for activeList
@@ -1730,19 +1913,19 @@ function DashboardPage() {
                 setTotalMessages(mappedActiveList.length);
                 
                 // Saved templates count
-                const saved = mappedActiveList.filter(m => m.status === 'saved' || m.status === 'linked').length;
+                const saved = mappedActiveList.filter(m => m.status === 'saved' || (m.status === 'edited' && !m.gift_order_id)).length;
                 setSavedCount(saved);
 
-                // Active Requests (Generated + Draft)
-                const activeReqs = mappedActiveList.filter(m => m.status === 'generated' || m.status === 'edited').length;
+                // Active Requests (Generated drafts)
+                const activeReqs = mappedActiveList.filter(m => m.status === 'generated').length;
                 setActiveRequests(activeReqs);
 
-                // Completed Requests (Saved + Archived)
-                const completedReqs = mappedActiveList.filter(m => m.status === 'saved' || m.status === 'linked').length;
+                // Completed Requests (Saved Templates & Linked Cards)
+                const completedReqs = mappedActiveList.filter(m => m.status === 'saved' || m.status === 'linked' || m.status === 'edited').length;
                 setCompletedRequests(completedReqs);
 
                 // Favorites Count
-                const favs = JSON.parse(localStorage.getItem('fav_messages') || '[]');
+                const favs = JSON.parse(localStorage.getItem('wishforge_fav_messages') || '[]');
                 const activeFavs = mappedActiveList.filter(m => favs.includes(m.id)).length;
                 setFavCount(activeFavs);
 
@@ -1862,7 +2045,7 @@ function DashboardPage() {
             <${ReportsSection} stats=${role === 'admin' && workspaceCustomer === 'all' ? stats : localStats} recentMessages=${recentMessages} />
 
             <!-- Recent Activity Widget & Diagnostics -->
-            <div style=${{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '2rem', marginBottom: '2rem' }}>
+            <div class="dashboard-secondary-grid" style=${{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '2rem', marginBottom: '2rem' }}>
                 <div class="glass-card" style=${{ padding: '1.8rem' }}>
                     <h3 style=${{ marginBottom: '1.2rem', fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                         <i data-lucide="activity" style=${{ width: '16px', color: 'var(--color-primary)' }}></i> Recent Activity log
@@ -1901,7 +2084,7 @@ function RecentActivityWidget({ limit = 5 }) {
 
     const load = () => {
         const email = currentUser?.email?.toLowerCase() || 'system';
-        const key = `giftai_activities_${email}`;
+        const key = `wishforge_activities_${email}`;
         const list = JSON.parse(localStorage.getItem(key) || '[]');
         setActivities(list.slice(0, limit));
     };
@@ -1977,14 +2160,7 @@ function ReportsSection({ stats, recentMessages }) {
     const totalRequests = (statusCounts.generated || 0) + (statusCounts.edited || 0);
     const totalSaved = (statusCounts.saved || 0) + (statusCounts.linked || 0);
 
-    const trendData = [
-        { name: 'Jan', count: 4 },
-        { name: 'Feb', count: 8 },
-        { name: 'Mar', count: 12 },
-        { name: 'Apr', count: 18 },
-        { name: 'May', count: 24 },
-        { name: 'Jun', count: recentMessages.length + 8 || 15 }
-    ];
+
 
     const COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#22c55e', '#f59e0b', '#ef4444'];
 
@@ -2040,22 +2216,7 @@ function ReportsSection({ stats, recentMessages }) {
                 </div>
             </div>
 
-            <!-- Monthly Trend Line Chart -->
-            <div class="chart-card glass-card" style=${{ padding: '1.5rem', height: '350px' }}>
-                <h3 style=${{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '1rem', color: 'var(--text-main)' }}>
-                    <i data-lucide="trending-up" style=${{ width: '16px', color: 'var(--color-success)' }}></i> Monthly Generation Count
-                </h3>
-                <div style=${{ width: '100%', height: '260px', marginTop: '1rem' }}>
-                    <${ResponsiveContainer} width="100%" height="100%">
-                        <${LineChart} data=${trendData}>
-                            <${XAxis} dataKey="name" stroke="var(--text-muted)" fontSize=${11} tickLine=${false} />
-                            <${YAxis} stroke="var(--text-muted)" fontSize=${11} tickLine=${false} allowDecimals=${false} />
-                            <${ReTooltip} contentStyle=${{ background: 'var(--bg-dropdown)', borderColor: 'var(--border-color)', color: 'var(--text-main)', borderRadius: '8px' }} />
-                            <${Line} type="monotone" dataKey="count" stroke="var(--color-secondary)" strokeWidth=${3} activeDot=${{ r: 7 }} />
-                        <//>
-                    <//>
-                </div>
-            </div>
+
         </div>
     `;
 }
@@ -2104,7 +2265,6 @@ function GeneratePage() {
     const [occasion, setOccasion] = useState('');
     const [tone, setTone] = useState('');
     const [note, setNote] = useState('');
-    const [devMode, setDevMode] = useState(false);
 
     // Workspace states
     const [loading, setLoading] = useState(false);
@@ -2120,8 +2280,7 @@ function GeneratePage() {
     const [festivalName, setFestivalName] = useState('');
     
     // Debug metadata states
-    const [debug, setDebug] = useState(null);
-    const [apiKeyInfo, setApiKeyInfo] = useState('');
+    
 
     // Check if a saved message was loaded via route state
     useEffect(() => {
@@ -2134,24 +2293,39 @@ function GeneratePage() {
             setNote(msg.extra_note || '');
             setGeneratedMsg(msg);
             setEditText(msg.message_text || '');
-            setIsFav(JSON.parse(localStorage.getItem('fav_messages') || '[]').includes(msg.id));
+            setIsFav(JSON.parse(localStorage.getItem('wishforge_fav_messages') || '[]').includes(msg.id));
             setEditMode(false);
             window.history.replaceState({}, document.title);
         }
     }, [location.state]);
 
+
+    // ROOT CAUSE FIX: Lucide replaces <i data-lucide> with a fresh <svg> on every
+    // createIcons() call, stripping the fav-active class we set on the <i>.
+    // This effect watches isFav and generatedMsg; after each change it calls
+    // createIcons() then uses requestAnimationFrame to wait for the DOM paint
+    // before directly patching the class on the resulting <svg>.
     useEffect(() => {
-        ApiService.checkConfig().then(res => {
-            if (res.success && res.data) {
-                const data = res.data;
-                setApiKeyInfo(data.configured ? `LOADED (Starts: ${data.prefix}, length: ${data.key_length})` : `MISSING (${data.error || 'Check .env'})`);
+        if (window.lucide) window.lucide.createIcons();
+        const raf = requestAnimationFrame(() => {
+            const favBtn = document.getElementById('generate-fav-btn');
+            if (!favBtn) return;
+            const svg = favBtn.querySelector('svg');
+            if (!svg) return;
+            if (isFav) {
+                svg.classList.add('fav-active');
+                favBtn.classList.add('active');
+            } else {
+                svg.classList.remove('fav-active');
+                favBtn.classList.remove('active');
             }
         });
-    }, []);
+        return () => cancelAnimationFrame(raf);
+    }, [isFav, generatedMsg]);
 
-    // Recipient autocomplete
+    // Recipient autocomplete with safety checks
     useEffect(() => {
-        const matched = recipients.find(r => r.name.toLowerCase() === recipient.trim().toLowerCase());
+        const matched = (recipients || []).find(r => r && r.name && r.name.toLowerCase() === (recipient || '').trim().toLowerCase());
         if (matched) {
             setRelationship(matched.relationship);
         }
@@ -2181,7 +2355,7 @@ function GeneratePage() {
             return;
         }
 
-        if (!recipient.trim() || !relationship.trim() || !occasion || !tone) {
+        if (!(recipient || '').trim() || !(relationship || '').trim() || !occasion || !tone) {
             showToast("Please fill all required settings.", true);
             return;
         }
@@ -2190,14 +2364,14 @@ function GeneratePage() {
         setGeneratedMsg(null);
         setEditMode(false);
 
-        // 1. Resolve Recipient ID
+        // 1. Resolve Recipient ID with safety checks
         let recId = null;
-        const matched = recipients.find(r => r.name.toLowerCase() === recipient.trim().toLowerCase());
+        const matched = (recipients || []).find(r => r && r.name && r.name.toLowerCase() === (recipient || '').trim().toLowerCase());
         if (matched) {
             recId = matched.id;
         } else {
             try {
-                const res = await ApiService.createRecipient(activeCustomerId, recipient.trim(), relationship.trim());
+                const res = await ApiService.createRecipient(activeCustomerId, (recipient || '').trim(), (relationship || '').trim());
                 if (res.success) {
                     recId = res.data.id;
                     setRecipients(prev => [...prev, res.data]);
@@ -2218,7 +2392,7 @@ function GeneratePage() {
             recipient_id: recId,
             occasion_id: parseInt(occasion),
             tone_id: parseInt(tone),
-            relationship: relationship.trim(),
+            relationship: (relationship || '').trim(),
             extra_note: note
         };
 
@@ -2249,17 +2423,9 @@ function GeneratePage() {
                 setShowFestivalPopup(true);
             }
 
-            if (apiResponse.extra && apiResponse.extra.ai_debug) {
-                setDebug(apiResponse.extra.ai_debug);
-            } else {
-                setDebug(null);
-            }
         } else {
             const err = apiResponse ? apiResponse.error : "Failed to connect to REST API.";
             showToast(err, true);
-            if (apiResponse && apiResponse.extra && apiResponse.extra.ai_debug) {
-                setDebug(apiResponse.extra.ai_debug);
-            }
         }
         setLoading(false);
     };
@@ -2295,9 +2461,9 @@ function GeneratePage() {
     };
 
     const handleEditSave = async () => {
-        if (!editText.trim() || !generatedMsg) return;
+        if (!(editText || '').trim() || !generatedMsg) return;
         try {
-            const res = await ApiService.editMessage(generatedMsg.id, editText.trim());
+            const res = await ApiService.editMessage(generatedMsg.id, (editText || '').trim());
             if (res.success) {
                 setGeneratedMsg(res.data);
                 setEditMode(false);
@@ -2312,20 +2478,36 @@ function GeneratePage() {
 
     const handleFavToggle = () => {
         if (!generatedMsg) return;
-        const favs = JSON.parse(localStorage.getItem('fav_messages') || '[]');
+        const favs = JSON.parse(localStorage.getItem('wishforge_fav_messages') || '[]');
         const idx = favs.indexOf(generatedMsg.id);
         if (idx === -1) {
             favs.push(generatedMsg.id);
             setIsFav(true);
-            showToast("Added to favorites!");
+            showToast("Added to Favorites ❤️");
             logActivity('favorite', `Message for ${generatedMsg.recipient_name} favorited`);
         } else {
             favs.splice(idx, 1);
             setIsFav(false);
-            showToast("Removed from favorites.");
+            showToast("Removed from Favorites");
             logActivity('unfavorite', `Message for ${generatedMsg.recipient_name} removed from favorites`);
         }
-        localStorage.setItem('fav_messages', JSON.stringify(favs));
+        localStorage.setItem('wishforge_fav_messages', JSON.stringify(favs));
+        // Directly patch the SVG after Lucide replaces the <i> element
+        // We do it on next tick so Lucide has already run
+        setTimeout(() => {
+            const favBtn = document.querySelector('.action-btn.fav-btn');
+            if (favBtn) {
+                const svg = favBtn.querySelector('svg');
+                if (svg) {
+                    const newIsFav = JSON.parse(localStorage.getItem('wishforge_fav_messages') || '[]').includes(generatedMsg.id);
+                    if (newIsFav) {
+                        svg.classList.add('fav-active');
+                    } else {
+                        svg.classList.remove('fav-active');
+                    }
+                }
+            }
+        }, 0);
     };
 
     const handleDownload = () => {
@@ -2334,7 +2516,7 @@ function GeneratePage() {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `GiftAI_Message_${recipient}.txt`;
+        a.download = `WishForge_Message_${recipient}.txt`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -2346,7 +2528,8 @@ function GeneratePage() {
         navigator.clipboard.writeText(generatedMsg.message_text).then(() => showToast("Copied to clipboard!"));
     };
 
-    const words = generatedMsg ? generatedMsg.message_text.trim().split(/\s+/).filter(w => w.length).length : 0;
+    // Calculate words with safety check for generatedMsg.message_text
+    const words = (generatedMsg && generatedMsg.message_text) ? generatedMsg.message_text.trim().split(/\s+/).filter(w => w.length).length : 0;
     const readingTime = Math.max(1, Math.round(words / 3.3));
 
     return html`
@@ -2388,7 +2571,7 @@ function GeneratePage() {
                                     <i data-lucide="calendar"></i>
                                     <select value=${occasion} onChange=${e => setOccasion(e.target.value)} required>
                                         <option value="">Select Occasion</option>
-                                        ${occasions.map(o => html`<option key=${o.id} value=${o.id}>${o.name}</option>`)}
+                                        ${(occasions || []).map(o => html`<option key=${o.id} value=${o.id}>${o.name}</option>`)}
                                     </select>
                                 </div>
                             </div>
@@ -2398,7 +2581,7 @@ function GeneratePage() {
                                     <i data-lucide="message-square"></i>
                                     <select value=${tone} onChange=${e => setTone(e.target.value)} required>
                                         <option value="">Select Tone Style</option>
-                                        ${tones.map(t => html`<option key=${t.id} value=${t.id}>${t.name}</option>`)}
+                                        ${(tones || []).map(t => html`<option key=${t.id} value=${t.id}>${t.name}</option>`)}
                                     </select>
                                 </div>
                             </div>
@@ -2412,13 +2595,6 @@ function GeneratePage() {
                             <textarea rows="4" maxLength="250" placeholder="e.g. She loves baking, retired last week..." value=${note} onChange=${e => setNote(e.target.value)}></textarea>
                         </div>
 
-                        <div class="checkbox-container">
-                            <input type="checkbox" id="check-test-mode" class="custom-checkbox" checked=${devMode} onChange=${e => setDevMode(e.target.checked)} />
-                            <label for="check-test-mode" class="checkbox-label">
-                                <span class="custom-check-box"><i data-lucide="check"></i></span>
-                                Enable AI Developer mode
-                            </label>
-                        </div>
 
                         <button type="submit" class="btn-primary" disabled=${loading}>
                             <span>Generate Message</span>
@@ -2485,45 +2661,60 @@ function GeneratePage() {
                     <!-- Final Workspace Output Area -->
                     ${!loading && generatedMsg && html`
                         <div class="output-content-area">
-                            <div class="message-box-wrapper">
-                                ${editMode ? html`
-                                    <div class="edit-area">
-                                        <textarea rows="6" value=${editText} onChange=${e => setEditText(e.target.value)} class="edit-textarea"></textarea>
-                                        <div class="edit-btn-row">
-                                            <button class="btn-text-only" onClick=${() => setEditMode(false)}>Cancel</button>
-                                            <button class="btn-primary-small" onClick=${handleEditSave}>Update & Save Version</button>
+                            <div class="glass-card message-output-card">
+                                <div class="output-card-header">
+                                    <i data-lucide="quote" class="quote-icon"></i>
+                                    <button class="card-more-btn" aria-label="More options"><i data-lucide="more-vertical"></i></button>
+                                </div>
+                                <div class="message-box-wrapper">
+                                    ${editMode ? html`
+                                        <div class="edit-area">
+                                            <textarea rows="6" value=${editText} onChange=${e => setEditText(e.target.value)} class="edit-textarea"></textarea>
+                                            <div class="edit-btn-row">
+                                                <button class="btn-text-only" onClick=${() => setEditMode(false)}>Cancel</button>
+                                                <button class="btn-primary-small" onClick=${handleEditSave}>Update & Save Version</button>
+                                            </div>
+                                        </div>
+                                    ` : html`
+                                        <div class="message-box active" dangerouslySetInnerHTML=${{ __html: highlightKeywords(generatedMsg.message_text, note) }}></div>
+                                    `}
+                                </div>
+
+                                <hr class="card-divider" />
+
+                                <div class="metadata-stats-row">
+                                    <div class="meta-metrics-group">
+                                        <div class="meta-metric">
+                                            <i data-lucide="align-left"></i>
+                                            <span>${words} Words</span>
+                                        </div>
+                                        <div class="meta-metric">
+                                            <i data-lucide="clock"></i>
+                                            <span>${readingTime}s Read time</span>
                                         </div>
                                     </div>
-                                ` : html`
-                                    <div class="message-box active" dangerouslySetInnerHTML=${{ __html: highlightKeywords(generatedMsg.message_text, note) }}></div>
-                                `}
-                            </div>
-
-                            <div class="metadata-stats-row">
-                                <div class="meta-metric">
-                                    <i data-lucide="text"></i>
-                                    <span>Words: <strong>${words}</strong></span>
-                                </div>
-                                <div class="meta-metric">
-                                    <i data-lucide="clock"></i>
-                                    <span>Reading time: <strong>${readingTime}s</strong></span>
-                                </div>
-                                <div class="meta-badges">
-                                    <span class="badge ${generatedMsg.ai_used ? 'badge-indigo' : 'badge-warning'}">${generatedMsg.ai_used ? 'AI Generated' : 'Template Default'}</span>
-                                    <span class="badge ${generatedMsg.status === 'saved' ? 'badge-emerald' : 'badge-indigo'}">${generatedMsg.status.toUpperCase()}</span>
-                                    <span class="badge badge-info">v${generatedMsg.version_number}</span>
+                                    <div class="meta-badges">
+                                        <span class="badge ${generatedMsg.ai_used ? 'badge-indigo' : 'badge-warning'}">${generatedMsg.ai_used ? 'AI GENERATED' : 'TEMPLATE DEFAULT'}</span>
+                                        <span class="badge ${generatedMsg.status === 'saved' || generatedMsg.status === 'linked' || generatedMsg.status === 'edited' ? 'badge-emerald' : 'badge-indigo'}">${generatedMsg.status === 'edited' ? 'SAVED' : generatedMsg.status.toUpperCase()}</span>
+                                        <span class="badge badge-info">V${generatedMsg.version_number}</span>
+                                    </div>
                                 </div>
                             </div>
 
                             <div class="action-row">
-                                <button class="action-btn" onClick=${handleCopy}><i data-lucide="copy"></i> Copy</button>
-                                <button class="action-btn success" onClick=${handleSave}><i data-lucide="save"></i> Save</button>
-                                <button class="action-btn info" onClick=${handleLink}><i data-lucide="link"></i> Link Card</button>
-                                <button class="action-btn warning" onClick=${() => { setEditText(generatedMsg.message_text); setEditMode(true); }}><i data-lucide="edit-3"></i> Edit</button>
-                                <button class="action-btn" onClick=${handleDownload}><i data-lucide="download"></i> Download</button>
-                                <button class="action-btn" onClick=${() => handleGenerate()}><i data-lucide="rotate-ccw"></i> Regenerate</button>
-                                <button class="action-btn fav-btn" onClick=${handleFavToggle}>
-                                    <i data-lucide="heart" class="fav-icon ${isFav ? 'fav-active' : ''}"></i>
+                                <button class="action-btn btn-copy" onClick=${handleCopy}><i data-lucide="copy"></i> Copy</button>
+                                ${generatedMsg.status === 'saved' || generatedMsg.status === 'linked' || generatedMsg.status === 'edited' ? html`
+                                    <button class="action-btn success btn-save" disabled style=${{ opacity: 0.8, cursor: 'not-allowed' }}><i data-lucide="check"></i> Saved</button>
+                                ` : html`
+                                    <button class="action-btn success btn-save" onClick=${handleSave}><i data-lucide="save"></i> Save</button>
+                                `}
+                                <button class="action-btn info btn-link" onClick=${handleLink}><i data-lucide="link"></i> Link Card</button>
+                                <button class="action-btn warning btn-edit" onClick=${() => { setEditText(generatedMsg.message_text); setEditMode(true); }}><i data-lucide="edit-3"></i> Edit</button>
+                                <button class="action-btn btn-download" onClick=${handleDownload}><i data-lucide="download"></i> Download</button>
+                                <button class="action-btn btn-regenerate" onClick=${() => handleGenerate()}><i data-lucide="rotate-ccw"></i> Regenerate</button>
+                                <button class="action-btn fav-btn" id="generate-fav-btn" onClick=${handleFavToggle} data-fav=${isFav ? 'true' : 'false'}>
+                                    <i data-lucide="heart" id="generate-fav-icon" class="fav-icon ${isFav ? 'fav-active' : ''}"></i>
+                                    <span>${isFav ? 'Favorited' : 'Favorite'}</span>
                                 </button>
                             </div>
                         </div>
@@ -2531,45 +2722,6 @@ function GeneratePage() {
                 </div>
             </div>
 
-            <!-- Debug panel -->
-            ${devMode && html`
-                <section class="glass-card debug-panel">
-                    <div class="debug-header">
-                        <h3>AI Developer Console</h3>
-                        <span class="badge badge-indigo">API Status Log</span>
-                    </div>
-                    <div class="debug-console-grid">
-                        <div class="debug-console-item">
-                            <label>API Key Status</label>
-                            <span class="debug-status ${apiKeyInfo.startsWith('LOADED') ? 'success' : 'failed'}">${apiKeyInfo}</span>
-                        </div>
-                        <div class="debug-console-item">
-                            <label>AI Provider</label>
-                            <span class="debug-status info">${debug ? debug.ai_provider : 'Groq API'}</span>
-                        </div>
-                        <div class="debug-console-item">
-                            <label>Fallback Triggered</label>
-                            <span class="badge">${debug ? (debug.fallback_triggered || 'No') : 'No'}</span>
-                        </div>
-                        <div class="debug-console-item">
-                            <label>Response Code</label>
-                            <span class="debug-status">${debug ? debug.response_status : 'N/A'}</span>
-                        </div>
-                    </div>
-                    <div class="debug-log-textarea">
-                        <label>Prompt / Request Sent</label>
-                        <pre>${debug ? debug.request_sent : 'No logs yet.'}</pre>
-                    </div>
-                    <div class="debug-log-textarea">
-                        <label>Error logs</label>
-                        <pre>${debug ? debug.error_msg : 'None'}</pre>
-                    </div>
-                    <div class="debug-log-textarea">
-                        <label>Raw Completions Data</label>
-                        <pre>${debug ? debug.raw_response : 'No logs yet.'}</pre>
-                    </div>
-                </section>
-            `}
             
             <!-- Festive occasion celebration pop-up modal -->
             ${showFestivalPopup && html`
@@ -2700,7 +2852,7 @@ function MessageRequestsPage() {
             const res = await ApiService.getMessages(q);
             if (res.success) {
                 let list = res.data || [];
-                const deletedIds = JSON.parse(localStorage.getItem('giftai_deleted_messages') || '[]');
+                const deletedIds = JSON.parse(localStorage.getItem('wishforge_deleted_messages') || '[]');
                 list = list.filter(m => !deletedIds.includes(m.id));
 
                 // Map names from context lists
@@ -2761,9 +2913,9 @@ function MessageRequestsPage() {
 
     const handleDelete = (id, recipient) => {
         if (confirm("Are you sure you want to delete this message request?")) {
-            const deleted = JSON.parse(localStorage.getItem('giftai_deleted_messages') || '[]');
+            const deleted = JSON.parse(localStorage.getItem('wishforge_deleted_messages') || '[]');
             deleted.push(id);
-            localStorage.setItem('giftai_deleted_messages', JSON.stringify(deleted));
+            localStorage.setItem('wishforge_deleted_messages', JSON.stringify(deleted));
             showToast("Request deleted successfully.");
             fetchRequests();
             logActivity('delete', `Request for ${recipient || 'customer'} deleted`);
@@ -2959,6 +3111,19 @@ function SavedMessagesPage() {
     const [editingId, setEditingId] = useState(null);
     const [editingText, setEditingText] = useState('');
 
+    // Menu State for Mobile 3-Dot Actions Dropdown
+    const [activeMenuId, setActiveMenuId] = useState(null);
+
+    useEffect(() => {
+        const handleOutsideClick = () => setActiveMenuId(null);
+        document.addEventListener('click', handleOutsideClick);
+        return () => document.removeEventListener('click', handleOutsideClick);
+    }, []);
+
+    // Optimistic UI Favorite cache and lazy rendering limits
+    const [localFavs, setLocalFavs] = useState(() => JSON.parse(localStorage.getItem('wishforge_fav_messages') || '[]'));
+    const [visibleLimit, setVisibleLimit] = useState(10);
+
     const fetchSaved = async () => {
         if (!currentUser) return;
         setLoading(true);
@@ -2972,16 +3137,20 @@ function SavedMessagesPage() {
         }
         if (filterOcc) q += `&occasion_id=${filterOcc}`;
         if (filterStatus) {
-            q += `&status=${filterStatus}`;
+            if (filterStatus === 'saved') {
+                q += `&status=saved,edited`;
+            } else {
+                q += `&status=${filterStatus}`;
+            }
         } else {
-            q += `&status=saved,linked`;
+            q += `&status=saved,linked,edited`;
         }
 
         try {
             const res = await ApiService.getMessages(q);
             if (res.success) {
                 let list = res.data || [];
-                const deletedIds = JSON.parse(localStorage.getItem('giftai_deleted_messages') || '[]');
+                const deletedIds = JSON.parse(localStorage.getItem('wishforge_deleted_messages') || '[]');
                 
                 // Locally filter out deleted cards
                 list = list.filter(m => !deletedIds.includes(m.id));
@@ -3019,32 +3188,112 @@ function SavedMessagesPage() {
         fetchSaved();
     }, [page, filterOcc, filterStatus, search, workspaceCustomer]);
 
+    // Handle scroll for virtualized/lazy rendering
+    useEffect(() => {
+        const handleScroll = () => {
+            if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 200) {
+                setVisibleLimit(prev => Math.min(prev + 10, messages.length));
+            }
+        };
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, [messages.length]);
+
+    useEffect(() => {
+        setVisibleLimit(10);
+    }, [messages]);
+
+    // Lucide Icons auto-instantiation hook
+    // ROOT CAUSE FIX: After Lucide replaces <i data-lucide="heart"> with a fresh <svg>,
+    // the fav-active class is lost. We call createIcons() then use requestAnimationFrame
+    // to wait for the DOM paint, then find every card by [data-msg-id] and patch
+    // the first svg in each heart-button with fav-active based on localFavs.
+    useEffect(() => {
+        if (window.lucide) {
+            window.lucide.createIcons();
+        }
+        const raf = requestAnimationFrame(() => {
+            document.querySelectorAll('[data-msg-id]').forEach(card => {
+                const msgId = parseInt(card.getAttribute('data-msg-id'));
+                const isFavMsg = localFavs.includes(msgId);
+                // Target the heart buttons: mobile-fav-btn and the desktop btn-action-icon[title="Favorite"]
+                const heartBtns = [
+                    card.querySelector('.mobile-fav-btn'),
+                    card.querySelector('.btn-action-icon[title="Favorite"]')
+                ].filter(Boolean);
+                heartBtns.forEach(btn => {
+                    const svg = btn.querySelector('svg');
+                    if (!svg) return;
+                    if (isFavMsg) {
+                        svg.classList.add('fav-active');
+                        btn.classList.add('is-fav');
+                    } else {
+                        svg.classList.remove('fav-active');
+                        btn.classList.remove('is-fav');
+                    }
+                });
+            });
+        });
+        return () => cancelAnimationFrame(raf);
+    }, [messages, loading, viewMode, editingId, localFavs, activeMenuId]);
+
     const handleCopy = (txt) => {
         navigator.clipboard.writeText(txt).then(() => showToast("Copied to clipboard!"));
     };
 
-    const handleFavToggle = (id, recipient, e) => {
-        const favs = JSON.parse(localStorage.getItem('fav_messages') || '[]');
+    // Optimistic UI toggle favorites
+    const handleFavToggle = async (id, recipient) => {
+        const favs = JSON.parse(localStorage.getItem('wishforge_fav_messages') || '[]');
         const idx = favs.indexOf(id);
-        if (idx === -1) {
-            favs.push(id);
-            showToast("Added to favorites!");
+        let newFavs;
+        const isCurrentlyFav = idx !== -1;
+
+        if (!isCurrentlyFav) {
+            newFavs = [...favs, id];
+            showToast("Added to Favorites ❤️");
             logActivity('favorite', `Message for ${recipient} favorited`);
-            e.currentTarget.querySelector('i').classList.add('fav-active');
         } else {
-            favs.splice(idx, 1);
-            showToast("Removed from favorites.");
+            newFavs = favs.filter(fid => fid !== id);
+            showToast("Removed from Favorites");
             logActivity('unfavorite', `Message for ${recipient} removed from favorites`);
-            e.currentTarget.querySelector('i').classList.remove('fav-active');
         }
-        localStorage.setItem('fav_messages', JSON.stringify(favs));
+
+        // Cache state instantly
+        localStorage.setItem('wishforge_fav_messages', JSON.stringify(newFavs));
+        setLocalFavs(newFavs);
+
+        // Async background synchronization
+        try {
+            await new Promise(resolve => setTimeout(resolve, 200));
+        } catch (e) {
+            console.error("Favorite backend sync failed", e);
+        }
+    };
+
+    // Text File Download
+    const handleDownload = (msg) => {
+        const recipientName = (msg.recipient_name || 'Recipient').replace(/[^a-zA-Z0-9]/g, '_');
+        const occasionName = (msg.occasion_name || 'Occasion').replace(/[^a-zA-Z0-9]/g, '_');
+        const dateStr = msg.created_at ? msg.created_at.split('T')[0] : new Date().toISOString().split('T')[0];
+        const filename = `${recipientName}_${occasionName}_${dateStr}.txt`;
+
+        const blob = new Blob([msg.message_text], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showToast("Downloaded plain text successfully!");
     };
 
     const handleDelete = (id, recipient) => {
         if (confirm("Are you sure you want to delete this greeting template?")) {
-            const deleted = JSON.parse(localStorage.getItem('giftai_deleted_messages') || '[]');
+            const deleted = JSON.parse(localStorage.getItem('wishforge_deleted_messages') || '[]');
             deleted.push(id);
-            localStorage.setItem('giftai_deleted_messages', JSON.stringify(deleted));
+            localStorage.setItem('wishforge_deleted_messages', JSON.stringify(deleted));
             showToast("Template deleted successfully.");
             addNotification('alert', 'Template Deleted', `Saved template for ${recipient} has been deleted.`);
             fetchSaved();
@@ -3054,14 +3303,28 @@ function SavedMessagesPage() {
 
     const handleEditSave = async (id, recipient) => {
         if (!editingText.trim()) return;
+        const originalMsg = messages.find(m => m.id === id);
+        const originalStatus = originalMsg ? originalMsg.status : 'saved';
+        const isLinked = originalMsg && (originalMsg.status === 'linked' || !!originalMsg.gift_order_id);
+
         try {
             const res = await ApiService.editMessage(id, editingText.trim());
             if (res.success) {
+                // Optimistic UI state updates
+                setMessages(prev => prev.map(m => m.id === id ? { ...m, message_text: editingText.trim(), status: isLinked ? 'linked' : 'saved' } : m));
+                setEditingId(null);
                 showToast("Greeting updated successfully!");
                 addNotification('save', 'Template Updated', `Edits to greeting message for ${recipient} saved.`);
-                setEditingId(null);
-                fetchSaved();
                 logActivity('edit', `Template for ${recipient} edited inline`);
+
+                // Restore backend status (since editMessage automatically changes status to 'edited')
+                if (isLinked) {
+                    await ApiService.linkCard(id);
+                } else {
+                    await ApiService.saveMessage(id);
+                }
+                
+                fetchSaved();
             }
         } catch (err) {
             showToast("Failed to save changes.", true);
@@ -3069,7 +3332,6 @@ function SavedMessagesPage() {
     };
 
     const totalPages = Math.max(1, Math.ceil(total / 6));
-    const favs = JSON.parse(localStorage.getItem('fav_messages') || '[]');
 
     return html`
         <${motion.div} ...${pageTransition} class="route-wrapper" role="tabpanel">
@@ -3121,54 +3383,89 @@ function SavedMessagesPage() {
                         <h3>No Saved Templates</h3>
                         <p>Generate some templates or tweak search queries to view lists.</p>
                     </div>
-                ` : messages.map(msg => {
+                ` : messages.slice(0, visibleLimit).map(msg => {
                     const formattedDate = msg.created_at
                         ? (() => {
                             const d = new Date(msg.created_at);
                             return isNaN(d.getTime()) ? 'N/A' : d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
                           })()
                         : 'N/A';
-                    const isFav = favs.includes(msg.id);
+                    const isFav = localFavs.includes(msg.id);
                     const isEditing = editingId === msg.id;
                     
                     return html`
-                        <div key=${msg.id} class="saved-message-card glass-card">
+                        <div key=${msg.id} class="saved-message-card glass-card" data-msg-id=${msg.id}>
                             <div class="card-glow"></div>
-                            <div class="saved-card-details">
-                                <div class="saved-card-header" style=${{ display: 'flex', alignItems: 'center', gap: '0.8rem', marginBottom: '1rem' }}>
-                                    <div class="profile-avatar" style=${{ width: '36px', height: '36px', borderRadius: '50%', background: 'linear-gradient(135deg, var(--color-primary), var(--color-secondary))', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '0.8rem' }}>
-                                        ${msg.recipient_name ? msg.recipient_name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2) : 'RC'}
-                                    </div>
-                                    <div style=${{ flex: 1, minWidth: 0 }}>
-                                        <h3 style=${{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--text-main)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                            To: ${msg.recipient_name} <span style=${{ fontSize: '0.75rem', fontWeight: 400, color: 'var(--text-muted)' }}>(${msg.relationship})</span>
-                                        </h3>
-                                        <span class="saved-card-date" style=${{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>${formattedDate}</span>
-                                    </div>
+                            
+                            <div class="saved-card-main-row">
+                                <div class="profile-avatar">
+                                    ${msg.recipient_name ? msg.recipient_name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2) : 'RC'}
                                 </div>
                                 
-                                ${isEditing ? html`
-                                    <div style=${{ marginBottom: '1rem' }}>
-                                        <textarea rows="4" class="edit-textarea" value=${editingText} onChange=${e => setEditingText(e.target.value)} style=${{ width: '100%', padding: '0.5rem', background: 'var(--bg-input)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', color: 'var(--text-main)', resize: 'vertical' }}></textarea>
-                                        <div style=${{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', justifyContent: 'flex-end' }}>
-                                            <button class="btn-primary-small" style=${{ background: 'var(--text-muted)' }} onClick=${() => setEditingId(null)}>Cancel</button>
-                                            <button class="btn-primary-small" onClick=${() => handleEditSave(msg.id, msg.recipient_name)}>Save</button>
+                                <div class="saved-card-content-area">
+                                    <h3 class="saved-card-title">
+                                        To: ${msg.recipient_name} <span class="relation-tag">(${msg.relationship})</span>
+                                    </h3>
+                                    <span class="saved-card-date">${formattedDate}</span>
+                                    
+                                    ${isEditing ? html`
+                                        <div style=${{ marginBottom: '1rem' }}>
+                                            <textarea rows="4" class="edit-textarea" value=${editingText} onChange=${e => setEditingText(e.target.value)} style=${{ width: '100%', padding: '0.5rem', background: 'var(--bg-input)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', color: 'var(--text-main)', resize: 'vertical' }}></textarea>
+                                            <div style=${{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', justifyContent: 'flex-end' }}>
+                                                <button class="btn-primary-small" style=${{ background: 'var(--text-muted)' }} onClick=${() => setEditingId(null)}>Cancel</button>
+                                                <button class="btn-primary-small" onClick=${() => handleEditSave(msg.id, msg.recipient_name)}>Update</button>
+                                            </div>
                                         </div>
+                                    ` : html`
+                                        <p class="saved-card-body">${msg.message_text}</p>
+                                    `}
+                                </div>
+                                
+                                <div class="saved-card-mobile-right">
+                                    <button class="mobile-fav-btn" onClick=${() => handleFavToggle(msg.id, msg.recipient_name)} aria-label="Favorite">
+                                        <i data-lucide="heart" data-heart="true" class=${isFav ? 'fav-active' : ''}></i>
+                                    </button>
+                                    <div class="mobile-menu-dropdown">
+                                        <button class="mobile-menu-trigger" onClick=${(e) => {
+                                            e.stopPropagation();
+                                            setActiveMenuId(activeMenuId === msg.id ? null : msg.id);
+                                        }} aria-label="More options">
+                                            <i data-lucide="more-vertical"></i>
+                                        </button>
+                                        ${activeMenuId === msg.id && html`
+                                            <div class="mobile-dropdown-menu" onClick=${e => e.stopPropagation()}>
+                                                <button class="dropdown-item" onClick=${() => { setActiveMenuId(null); navigate('/generate', { state: { loadMessage: msg } }); }}>
+                                                    <i data-lucide="external-link"></i> Load Workspace
+                                                </button>
+                                                <button class="dropdown-item" onClick=${() => { setActiveMenuId(null); setEditingId(msg.id); setEditingText(msg.message_text); }}>
+                                                    <i data-lucide="edit-3"></i> Edit inline
+                                                </button>
+                                                <button class="dropdown-item" onClick=${() => { setActiveMenuId(null); handleCopy(msg.message_text); }}>
+                                                    <i data-lucide="copy"></i> Copy Text
+                                                </button>
+                                                <button class="dropdown-item" onClick=${() => { setActiveMenuId(null); handleDownload(msg); }}>
+                                                    <i data-lucide="download"></i> Download Text
+                                                </button>
+                                                <button class="dropdown-item delete" onClick=${() => { setActiveMenuId(null); handleDelete(msg.id, msg.recipient_name); }}>
+                                                    <i data-lucide="trash-2"></i> Delete
+                                                </button>
+                                            </div>
+                                        `}
                                     </div>
-                                ` : html`
-                                    <p class="saved-card-body" style=${{ fontSize: '0.9rem', lineHeight: '1.5', color: 'var(--text-muted)' }}>${msg.message_text}</p>
-                                `}
+                                </div>
                             </div>
                             
-                            <div class="saved-card-footer" style=${{ marginTop: '1.2rem', paddingTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
-                                <div class="saved-card-badges" style=${{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
-                                    <span class="badge badge-indigo">${msg.occasion_name}</span>
-                                    <span class="badge badge-info">${msg.tone_name || 'Warm'}</span>
-                                    <span class="badge ${msg.status === 'saved' ? 'badge-emerald' : 'badge-info'}">
-                                        ${msg.status === 'saved' ? 'Saved Template' : 'Linked to Order'}
+                            <div class="saved-card-footer">
+                                <div class="saved-card-badges">
+                                    <span class="badge badge-indigo mobile-hide">${msg.occasion_name}</span>
+                                    <span class="badge badge-info mobile-hide">${msg.tone_name || 'Warm'}</span>
+                                    <span class="badge badge-indigo">${msg.ai_used !== false ? 'AI GENERATED' : 'TEMPLATE DEFAULT'}</span>
+                                    <span class="badge ${msg.status === 'saved' || (msg.status === 'edited' && !msg.gift_order_id) ? 'badge-emerald' : 'badge-info'}">
+                                        ${msg.status === 'saved' || (msg.status === 'edited' && !msg.gift_order_id) ? 'SAVED' : 'LINKED'}
                                     </span>
+                                    <span class="badge badge-info">V${msg.version_number || 1}</span>
                                 </div>
-                                <div class="saved-card-actions">
+                                <div class="saved-card-desktop-actions">
                                     <button class="btn-action-icon" onClick=${() => navigate('/generate', { state: { loadMessage: msg } })} title="Load to workspace">
                                         <i data-lucide="external-link"></i>
                                     </button>
@@ -3178,8 +3475,11 @@ function SavedMessagesPage() {
                                     <button class="btn-action-icon" onClick=${() => handleCopy(msg.message_text)} title="Copy text">
                                         <i data-lucide="copy"></i>
                                     </button>
-                                    <button class="btn-action-icon" onClick=${(e) => handleFavToggle(msg.id, msg.recipient_name, e)} title="Favorite">
-                                        <i data-lucide="heart" class=${isFav ? 'fav-active' : ''}></i>
+                                    <button class="btn-action-icon" onClick=${() => handleDownload(msg)} title="Download text">
+                                        <i data-lucide="download"></i>
+                                    </button>
+                                    <button class="btn-action-icon" onClick=${() => handleFavToggle(msg.id, msg.recipient_name)} title="Favorite">
+                                        <i data-lucide="heart" data-heart="true" class=${isFav ? 'fav-active' : ''}></i>
                                     </button>
                                     <button class="btn-action-icon delete" onClick=${() => handleDelete(msg.id, msg.recipient_name)} title="Delete template">
                                         <i data-lucide="trash-2"></i>
@@ -3247,7 +3547,7 @@ function HistoryPage() {
             const res = await ApiService.getMessages(q);
             if (res.success) {
                 let list = res.data || [];
-                const deletedIds = JSON.parse(localStorage.getItem('giftai_deleted_messages') || '[]');
+                const deletedIds = JSON.parse(localStorage.getItem('wishforge_deleted_messages') || '[]');
                 
                 // Exclude locally deleted messages
                 list = list.filter(m => !deletedIds.includes(m.id));
@@ -3544,7 +3844,7 @@ function AdminPage() {
             const [custRes, statsRes, diagRes] = await Promise.all([
                 ApiService.getCustomers(),
                 ApiService.getStats(),
-                fetch('https://giftai-backend-kpkw.onrender.com/api/diagnostics')
+                fetch(`${API_BASE}/diagnostics`)
             ]);
 
             if (custRes.success) setCustomers(custRes.data || []);
@@ -3642,7 +3942,7 @@ function AdminPage() {
             </div>
 
             <!-- Bottom Grid (Activity stream, customers table, diagnostics) -->
-            <div style=${{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '2rem', marginBottom: '2rem' }}>
+            <div class="dashboard-secondary-grid" style=${{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '2rem', marginBottom: '2rem' }}>
                 <!-- Customers Table -->
                 <div class="admin-table-card glass-card">
                     <div class="admin-header-row">
