@@ -151,22 +151,33 @@ def generate_and_send_otp(customer):
     hashes it, stores it, and sends the raw OTP via Resend.
     """
     now = datetime.utcnow()
-    
-    # 1. Enforce rate limiting: Max 5 requests per hour
+
+    # Detect environment mode (development/debug vs production)
+    _flask_env = os.getenv('FLASK_ENV', 'development').lower()
+    _flask_debug = os.getenv('FLASK_DEBUG', 'False').lower() in ['true', '1', 't'] or os.getenv('DEBUG', 'False').lower() in ['true', '1', 't']
+    is_dev = (_flask_env == 'development') or _flask_debug
+
+    # Set rate limit thresholds dynamically
+    max_hourly = 100 if is_dev else 5
+    cooldown_sec = 5 if is_dev else 60
+
+    # 1. Enforce rate limiting: Max OTP requests per hour
     one_hour_ago = now - timedelta(hours=1)
+
     hourly_count = OTPVerification.query.filter(
         OTPVerification.user_id == customer.id,
         OTPVerification.created_at >= one_hour_ago
     ).count()
-    if hourly_count >= 5:
-        return False, "Rate limit exceeded. Maximum 5 OTP requests per hour."
+    if hourly_count >= max_hourly:
+        return False, f"Rate limit exceeded. Maximum {max_hourly} OTP requests per hour."
 
-    # 2. Enforce rate limiting: 60-second cooldown
+    # 2. Enforce rate limiting: resend cooldown
     last_record = OTPVerification.query.filter_by(
         user_id=customer.id
     ).order_by(OTPVerification.created_at.desc()).first()
-    if last_record and (now - last_record.created_at < timedelta(seconds=60)):
-        return False, "Please wait 60 seconds before requesting another code."
+    if last_record and (now - last_record.created_at < timedelta(seconds=cooldown_sec)):
+        return False, f"Please wait {cooldown_sec} seconds before requesting another code."
+
 
     # 3. Clean up expired OTPs for this user
     cleanup_expired_otps(customer.id)
