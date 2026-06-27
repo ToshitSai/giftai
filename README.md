@@ -267,20 +267,27 @@ WishForge is configured for production deployments:
 
 ## Screenshots
 
-- **Login Screen:** Glassmorphic card login container.  
-  *(Placeholder for login.png)*
+- **Login Screen:** Glassmorphic card login container.
+  <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/16f0fa17-70dc-49bc-b73b-06c78ebe19a8" />
+
 - **User Dashboard:** Workspace with generator form and history records.  
-  *(Placeholder for dashboard.png)*
+  <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/ad0cc27b-5665-49df-b2b1-b0218e5258bd" />
+
 - **AI Generation:** Output card showing generated content and action triggers.  
-  *(Placeholder for ai_generation.png)*
+  <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/1d15e456-f231-4b53-87ac-2b24376400f7" />
+
 - **Favorites Library:** Persistent folder showing loved greeting cards.  
-  *(Placeholder for favorites.png)*
-- **Admin Dashboard:** Activity audits, log filters, and API diagnostics.  
-  *(Placeholder for admin_dashboard.png)*
+  <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/8cc28188-fcb4-496e-a75d-af8c4ee335db" />
+
+- **Admin Dashboard:** Activity audits, log filters, and API diagnostics.
+  <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/815fe7c7-a308-463b-b61e-425058743798" />
+  
 - **Forgot Password:** Email input and OTP input forms.  
-  *(Placeholder for forgot_password.png)*
+  <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/e41bec6e-2aff-4a47-8044-6dec7ab2d94b" />
+  <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/10e8bc33-8a27-43d8-9748-2dbdd061e311" />
+
 - **Mobile View:** Collapsed side navigation drawer and fluid card sizing.  
-  *(Placeholder for mobile_view.png)*
+  <img width="738" height="1600" alt="image" src="https://github.com/user-attachments/assets/9cd4d616-bbbc-4f89-b9e7-207e05428ba5" />
 
 ---
 
