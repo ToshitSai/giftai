@@ -23,6 +23,14 @@ class Config:
     LIMIT_AI_GENERATION = os.getenv('LIMIT_AI_GENERATION', '10 per minute')
     LIMIT_AUTH = os.getenv('LIMIT_AUTH', '10 per 5 minutes')
     LIMIT_ADMIN = os.getenv('LIMIT_ADMIN', '30 per minute')
+    CORS_ORIGINS = [
+        origin.strip()
+        for origin in os.getenv(
+            'CORS_ORIGINS',
+            'https://giftai-bice.vercel.app,http://localhost:5173,http://127.0.0.1:5173'
+        ).split(',')
+        if origin.strip()
+    ]
 
     # Detect if we are in development/debug mode
     _flask_env = os.getenv('FLASK_ENV', 'development').lower()
@@ -54,12 +62,15 @@ class Config:
     # live in /tmp unless an external DATABASE_URI is configured.
     if os.getenv('DATABASE_URI'):
         SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URI')
+        DATABASE_MODE = 'external'
     elif os.getenv('VERCEL'):
         sqlite_dir = os.path.join(tempfile.gettempdir(), 'giftai')
         os.makedirs(sqlite_dir, exist_ok=True)
         SQLALCHEMY_DATABASE_URI = f"sqlite:///{os.path.join(sqlite_dir, 'app.db')}"
+        DATABASE_MODE = 'vercel-tmp-sqlite'
     else:
         SQLALCHEMY_DATABASE_URI = "sqlite:///app.db"
+        DATABASE_MODE = 'local-sqlite'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # Configure SQLAlchemy with pool_pre_ping=True and pool_recycle=300 for Aiven MySQL compatibility

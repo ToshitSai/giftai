@@ -20,13 +20,23 @@ def create_app(config_class=Config):
     app.config.from_object(config_class)
     
     # Enable CORS for frontend integration
-    CORS(app)
+    CORS(app, resources={r"/api/*": {"origins": app.config.get("CORS_ORIGINS", [])}})
     
     # Initialize the database with the app context
     db.init_app(app)
     
     # Initialize Flask-Limiter with the app
     limiter.init_app(app)
+
+    @app.after_request
+    def apply_security_headers(response):
+        response.headers.setdefault("X-Content-Type-Options", "nosniff")
+        response.headers.setdefault("X-Frame-Options", "DENY")
+        response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+        response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+        if response.content_type and response.content_type.startswith("application/json"):
+            response.headers.setdefault("Cache-Control", "no-store")
+        return response
     
     # Global exception handler for handling internal errors cleanly
     @app.errorhandler(500)
@@ -78,5 +88,35 @@ def create_app(config_class=Config):
             "success": True,
             "message": "Hello, world! Flask backend is fully configured and running."
         }), 200
+
+    @app.route('/api/status', methods=['GET'])
+    def api_status():
+        from sqlalchemy import text
+
+        database_ok = False
+        database_error = None
+        try:
+            with db.engine.connect() as connection:
+                connection.execute(text("SELECT 1"))
+            database_ok = True
+        except Exception as exc:
+            database_error = str(exc)
+
+        return jsonify({
+            "success": database_ok,
+            "service": "Greetly Backend API",
+            "version": "1.0.0",
+            "environment": "vercel" if app.config.get("DATABASE_MODE") == "vercel-tmp-sqlite" else "server",
+            "database": {
+                "ok": database_ok,
+                "mode": app.config.get("DATABASE_MODE"),
+                "persistent": app.config.get("DATABASE_MODE") == "external",
+                "error": database_error
+            },
+            "ai": {
+                "provider": "Groq API",
+                "configured": bool(app.config.get("GROQ_API_KEY"))
+            }
+        }), 200 if database_ok else 503
 
     return app

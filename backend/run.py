@@ -16,26 +16,10 @@ from app import create_app
 # Create Flask application instance using the factory
 app = create_app()
 
-from app.models import db
+from app.bootstrap import initialize_backend
 
-
-with app.app_context():
-    db.create_all()
-    print("[SUCCESS] Database tables created")
-    
-    # Run dynamic inspection-based database migration to update schema
-    from app.utils.migrations import run_migrations
-    run_migrations(app)
-    
-    from app.seed.seed_tones import seed as seed_tones
-    from app.seed.seed_occasions import seed as seed_occasions
-    
-    # Run the seeders inside the application context, passing the app instance
-    # to reuse the same database engine, connection pool, and application context.
-    seed_tones(app)
-    seed_occasions(app)
-
-print("Lookup tables seeded")
+initialize_backend(app)
+print("[SUCCESS] Backend initialized and lookup tables seeded")
 
 
 if __name__ == '__main__':
