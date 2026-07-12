@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://localhost:5000/api'; // Default Flask backend port
+const API_BASE_URL = '/api'; // Use relative path so it automatically routes to the correct IP/Domain
 
 const authFetch = async (endpoint, options = {}) => {
   const token = localStorage.getItem('token');
