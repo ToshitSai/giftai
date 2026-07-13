@@ -1,11 +1,15 @@
 const API_BASE_URL = '/api';
+const DEFAULT_TIMEOUT_MS = 30000;
 
 const authFetch = async (endpoint, options = {}) => {
   const token = localStorage.getItem('token');
+  const { timeoutMs = DEFAULT_TIMEOUT_MS, ...fetchOptions } = options;
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
   
   const headers = {
     'Content-Type': 'application/json',
-    ...options.headers,
+    ...fetchOptions.headers,
   };
 
   if (token) {
@@ -15,11 +19,17 @@ const authFetch = async (endpoint, options = {}) => {
   let response;
   try {
     response = await fetch(`${API_BASE_URL}${endpoint}`, {
-      ...options,
+      ...fetchOptions,
       headers,
+      signal: controller.signal,
     });
-  } catch {
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      throw new Error('The server took too long to respond. Please try again.');
+    }
     throw new Error('Unable to reach the server. Please check your connection and try again.');
+  } finally {
+    window.clearTimeout(timeoutId);
   }
 
   const contentType = response.headers.get('content-type') || '';
@@ -53,7 +63,8 @@ export const api = {
   
   generateMessage: (payload) => authFetch('/create', { // Backend route alias for /messages/generate
     method: 'POST',
-    body: JSON.stringify(payload)
+    body: JSON.stringify(payload),
+    timeoutMs: 60000
   }),
 
   getMessages: () => authFetch('/messages'),
