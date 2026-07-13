@@ -5,6 +5,7 @@ import LandingPage from '../pages/LandingPage';
 import LoginPage from '../pages/LoginPage';
 import SignUpPage from '../pages/SignUpPage';
 import Dashboard from '../pages/Dashboard';
+import ForgotPasswordPage from '../pages/ForgotPasswordPage';
 import { useAuth } from '../contexts/AuthContext';
 
 const pageVariants = {
@@ -39,6 +40,7 @@ export default function AnimatedRoutes() {
         <Route path="/" element={<PageWrapper><LandingPage /></PageWrapper>} />
         <Route path="/login" element={<PageWrapper><LoginPage /></PageWrapper>} />
         <Route path="/signup" element={<PageWrapper><SignUpPage /></PageWrapper>} />
+        <Route path="/forgot-password" element={<PageWrapper><ForgotPasswordPage /></PageWrapper>} />
         <Route path="/dashboard" element={dashboardElement} />
       </Routes>
     </AnimatePresence>

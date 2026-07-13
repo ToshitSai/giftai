@@ -60,6 +60,21 @@ export const api = {
     method: 'POST',
     body: JSON.stringify({ name, email, password })
   }),
+
+  forgotPassword: (email) => authFetch('/auth/forgot-password', {
+    method: 'POST',
+    body: JSON.stringify({ email })
+  }),
+
+  verifyResetCode: (email, otp) => authFetch('/auth/verify-reset-code', {
+    method: 'POST',
+    body: JSON.stringify({ email, otp })
+  }),
+
+  resetPassword: (email, otp, new_password) => authFetch('/auth/reset-password', {
+    method: 'POST',
+    body: JSON.stringify({ email, otp, new_password })
+  }),
   
   generateMessage: (payload) => authFetch('/create', { // Backend route alias for /messages/generate
     method: 'POST',
