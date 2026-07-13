@@ -6,6 +6,7 @@ from flask import Flask, jsonify
 from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+import pymysql
 from app.config import Config
 from app.models import db
 
@@ -18,6 +19,31 @@ def create_app(config_class=Config):
     
     # Load settings from Config class
     app.config.from_object(config_class)
+
+    if app.config.get("DATABASE_MODE") == "external":
+        connect_args = dict(app.config.get("SQLALCHEMY_ENGINE_OPTIONS", {}).get("connect_args", {}))
+        ssl_args = connect_args.get("ssl")
+
+        def _external_db_creator():
+            creator_kwargs = {
+                "host": app.config.get("DB_HOST"),
+                "user": app.config.get("DB_USER"),
+                "password": app.config.get("DB_PASSWORD"),
+                "port": int(app.config.get("DB_PORT", 3306)),
+                "database": app.config.get("DB_NAME"),
+                "connect_timeout": connect_args.get("connect_timeout", 10),
+                "read_timeout": connect_args.get("read_timeout", 10),
+                "write_timeout": connect_args.get("write_timeout", 10),
+                "autocommit": False,
+            }
+            if ssl_args:
+                creator_kwargs["ssl"] = ssl_args
+            return pymysql.connect(**creator_kwargs)
+
+        app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+            **app.config.get("SQLALCHEMY_ENGINE_OPTIONS", {}),
+            "creator": _external_db_creator,
+        }
 
     if app.config.get("IS_PRODUCTION") and app.config.get("SECRET_KEY") == app.config.get("DEFAULT_SECRET_KEY"):
         raise RuntimeError("SECRET_KEY must be configured for production deployments.")
