@@ -280,6 +280,10 @@ function PrivacyView({ onBack }) {
           <strong className="block text-[#0F0A1A] uppercase font-display mb-1">Analytics (Optional)</strong>
           To help us understand if the website is fast, if buttons are easy to find, and how to improve Greetly. We never sell this data.
         </div>
+        <div className="bg-[#FFD166]/30 p-3 rounded-lg border-2 border-[#0F0A1A] border-dashed">
+          <strong className="block text-[#0F0A1A] uppercase font-display mb-1">Data Access</strong>
+          Please note that the website owner has access to the data you provide to ensure the magic keeps flowing and the service runs smoothly!
+        </div>
       </div>
 
       <motion.button
