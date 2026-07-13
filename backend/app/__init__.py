@@ -22,8 +22,6 @@ def create_app(config_class=Config):
 
     if app.config.get("DATABASE_MODE") == "external":
         connect_args = dict(app.config.get("SQLALCHEMY_ENGINE_OPTIONS", {}).get("connect_args", {}))
-        ssl_args = connect_args.get("ssl")
-
         def _external_db_creator():
             creator_kwargs = {
                 "host": app.config.get("DB_HOST"),
@@ -35,9 +33,8 @@ def create_app(config_class=Config):
                 "read_timeout": connect_args.get("read_timeout", 10),
                 "write_timeout": connect_args.get("write_timeout", 10),
                 "autocommit": False,
+                "ssl": {"ssl": {}},
             }
-            if ssl_args:
-                creator_kwargs["ssl"] = ssl_args
             return pymysql.connect(**creator_kwargs)
 
         app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
