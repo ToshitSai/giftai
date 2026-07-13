@@ -18,6 +18,9 @@ def create_app(config_class=Config):
     
     # Load settings from Config class
     app.config.from_object(config_class)
+
+    if app.config.get("IS_PRODUCTION") and app.config.get("SECRET_KEY") == app.config.get("DEFAULT_SECRET_KEY"):
+        raise RuntimeError("SECRET_KEY must be configured for production deployments.")
     
     # Enable CORS for frontend integration
     CORS(app, resources={r"/api/*": {"origins": app.config.get("CORS_ORIGINS", [])}})
@@ -34,6 +37,13 @@ def create_app(config_class=Config):
         response.headers.setdefault("X-Frame-Options", "DENY")
         response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
         response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+        response.headers.setdefault("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload")
+        response.headers.setdefault(
+            "Content-Security-Policy",
+            "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; "
+            "script-src 'self'; connect-src 'self' https://api.groq.com https://api.openai.com https://api.brevo.com https://generativelanguage.googleapis.com; "
+            "font-src 'self' data:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+        )
         if response.content_type and response.content_type.startswith("application/json"):
             response.headers.setdefault("Cache-Control", "no-store")
         return response

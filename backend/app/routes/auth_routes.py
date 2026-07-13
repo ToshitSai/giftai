@@ -4,7 +4,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from app.models import db, Customer
 from app.utils.auth_helper import generate_token, token_required
 from app.utils.response_helper import success_response, error_response
-from app.utils.validators import validate_customer_data
+from app.utils.validators import validate_customer_data, validate_password_strength
 from app import limiter
 
 auth_bp = Blueprint('auth_routes', __name__)
@@ -89,8 +89,9 @@ def register():
             return error_response(validation_error, 400)
 
         password = data.get('password')
-        if not password or len(password) < 6:
-            return error_response("Password is required and must be at least 6 characters.", 400)
+        password_error = validate_password_strength(password)
+        if password_error:
+            return error_response(password_error, 400)
 
         email_clean = data['email'].strip().lower()
 
@@ -136,8 +137,9 @@ def change_password():
         old_password = data.get('old_password')
         new_password = data.get('new_password')
 
-        if not new_password or len(new_password) < 6:
-            return error_response("New password is required and must be at least 6 characters.", 400)
+        password_error = validate_password_strength(new_password)
+        if password_error:
+            return error_response(password_error.replace("Password", "New password"), 400)
 
         if g.role == 'admin':
             return error_response("Admin credentials are set via server environment, not APIs.", 403)

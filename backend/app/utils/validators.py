@@ -4,6 +4,8 @@
 
 import re
 
+PASSWORD_REGEX = re.compile(r'^(?=.*[A-Za-z])(?=.*\d).{8,128}$')
+
 def validate_customer_data(data):
     """Validates parameters for registering a customer."""
     if not data:
@@ -22,6 +24,14 @@ def validate_customer_data(data):
     if not re.match(email_regex, email):
         return "Invalid email format"
         
+    return None
+
+def validate_password_strength(password):
+    """Require a password with letters, digits, and reasonable length."""
+    if not password:
+        return "Password is required."
+    if not PASSWORD_REGEX.match(password):
+        return "Password must be 8-128 characters and include at least one letter and one number."
     return None
 
 def validate_recipient_data(data):

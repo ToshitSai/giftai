@@ -4,6 +4,7 @@
 
 import os
 import tempfile
+import secrets
 from dotenv import load_dotenv
 
 # Load environment variables from .env file in the backend directory
@@ -12,8 +13,14 @@ dotenv_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__fil
 load_dotenv(dotenv_path=dotenv_path)
 
 class Config:
+    IS_VERCEL = bool(os.getenv('VERCEL'))
+    IS_PRODUCTION = IS_VERCEL or os.getenv('FLASK_ENV', '').lower() == 'production'
+    DEFAULT_SECRET_KEY = 'default-paperplane-key-1234'
+
     # Secret Key for signing cookies and sessions
-    SECRET_KEY = os.getenv('SECRET_KEY', 'default-paperplane-key-1234')
+    SECRET_KEY = os.getenv('SECRET_KEY') or (
+        secrets.token_urlsafe(32) if not IS_PRODUCTION else DEFAULT_SECRET_KEY
+    )
 
     # Administrator Account Credentials
     ADMIN_EMAIL = os.getenv('ADMIN_EMAIL')
@@ -31,6 +38,7 @@ class Config:
         ).split(',')
         if origin.strip()
     ]
+    MAX_CONTENT_LENGTH = int(os.getenv('MAX_CONTENT_LENGTH', str(1024 * 1024)))
 
     # Detect if we are in development/debug mode
     _flask_env = os.getenv('FLASK_ENV', 'development').lower()
@@ -80,6 +88,11 @@ class Config:
     }
 
     # AI Service Credentials
+    GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
+    OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
     GROQ_API_KEY = os.getenv('GROQ_API_KEY')
+    BREVO_API_KEY = os.getenv('BREVO_API_KEY')
+    BREVO_SENDER_EMAIL = os.getenv('BREVO_SENDER_EMAIL', 'hello@greetly.ai')
+    BREVO_SENDER_NAME = os.getenv('BREVO_SENDER_NAME', 'Greetly AI')
 
     
