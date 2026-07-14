@@ -3,7 +3,7 @@ import { BrowserRouter as Router } from 'react-router-dom'
 import AnimatedBackground from './components/AnimatedBackground'
 import AnimatedRoutes from './components/AnimatedRoutes'
 import { AuthProvider } from './contexts/AuthContext'
-import { CookieConsent } from './components/ui/CookieConsent'
+import { CookieBanner } from './components/ui/CookieBanner'
 
 function App() {
   return (
@@ -15,7 +15,7 @@ function App() {
           <div className="relative z-10 flex flex-col min-h-screen">
             <AnimatedRoutes />
           </div>
-          <CookieConsent />
+          <CookieBanner />
         </div>
       </Router>
     </AuthProvider>
