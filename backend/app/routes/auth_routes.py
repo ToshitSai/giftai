@@ -1,6 +1,6 @@
 # backend/app/routes/auth_routes.py
 from flask import Blueprint, request, jsonify, current_app, g
-from werkzeug.security import generate_password_hash, check_password_hash
+from app.extensions import bcrypt
 from app.models import db, Customer
 from app.utils.auth_helper import generate_token, token_required
 from app.utils.response_helper import success_response, error_response
@@ -59,7 +59,7 @@ def login():
                 # This should not happen if migration was run, but just in case:
                 return error_response("Account password not set. Please contact administrator.", 401)
 
-            if not check_password_hash(customer.password_hash, password):
+            if not bcrypt.check_password_hash(customer.password_hash, password):
                 return error_response("Incorrect password.", 401)
 
             token = generate_token(customer.id, "user")
@@ -106,7 +106,7 @@ def register():
             name=data['name'],
             email=email_clean,
             phone=data.get('phone', "+123-456-7890"),
-            password_hash=generate_password_hash(password),
+            password_hash=bcrypt.generate_password_hash(password).decode('utf-8'),
             password_reset_required=False
         )
         db.session.add(new_customer)
@@ -152,11 +152,11 @@ def change_password():
         # If user has a password set, verify old password unless password_reset_required is true
         # (if they are forced to reset, they might enter the old password or not, but we verify it if they provide it)
         if customer.password_hash and old_password:
-            if not check_password_hash(customer.password_hash, old_password):
+            if not bcrypt.check_password_hash(customer.password_hash, old_password):
                 return error_response("Incorrect old password.", 400)
 
         # Update the password
-        customer.password_hash = generate_password_hash(new_password)
+        customer.password_hash = bcrypt.generate_password_hash(new_password).decode('utf-8')
         customer.password_reset_required = False
         db.session.commit()
 

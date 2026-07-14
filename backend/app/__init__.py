@@ -7,8 +7,11 @@ from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 import pymysql
+import os
+import tempfile
 from app.config import Config
 from app.models import db
+from app.extensions import bcrypt
 
 # Instantiate the global rate limiter
 limiter = Limiter(key_func=get_remote_address)
@@ -16,9 +19,28 @@ limiter = Limiter(key_func=get_remote_address)
 def create_app(config_class=Config):
     # Instantiate Flask
     app = Flask(__name__)
-    
+
     # Load settings from Config class
     app.config.from_object(config_class)
+
+    def _safe_database_reason(error):
+        message = str(error)
+        if "1045" in message or "Access denied" in message:
+            return "external database authentication failed"
+        if "timeout" in message.lower():
+            return "external database connection timed out"
+        return "external database unavailable"
+
+    def _activate_sqlite_fallback(error):
+        reason = _safe_database_reason(error)
+        sqlite_dir = os.path.join(tempfile.gettempdir(), 'greetly')
+        os.makedirs(sqlite_dir, exist_ok=True)
+        app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{os.path.join(sqlite_dir, 'app.db')}"
+        app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {"pool_pre_ping": True}
+        app.config["DATABASE_MODE"] = "vercel-tmp-sqlite-fallback"
+        app.config["EXTERNAL_DATABASE_URI"] = None
+        app.config["DATABASE_FALLBACK_REASON"] = reason
+        print(f"[DB FALLBACK] External database unavailable; using temporary SQLite. Reason: {reason}", flush=True)
 
     if app.config.get("DATABASE_MODE") == "external":
         connect_args = dict(app.config.get("SQLALCHEMY_ENGINE_OPTIONS", {}).get("connect_args", {}))
@@ -33,24 +55,40 @@ def create_app(config_class=Config):
                 "read_timeout": connect_args.get("read_timeout", 10),
                 "write_timeout": connect_args.get("write_timeout", 10),
                 "autocommit": False,
-                "ssl": {"ssl": {}},
             }
+            if app.config.get("DB_SSL_REQUIRED"):
+                creator_kwargs["ssl"] = {"ssl": {}}
             return pymysql.connect(**creator_kwargs)
 
-        app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
-            **app.config.get("SQLALCHEMY_ENGINE_OPTIONS", {}),
-            "creator": _external_db_creator,
-        }
+        try:
+            probe = _external_db_creator()
+            probe.close()
+            app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+                **app.config.get("SQLALCHEMY_ENGINE_OPTIONS", {}),
+                "creator": _external_db_creator,
+            }
+        except Exception as exc:
+            if os.getenv("DB_STRICT", "false").strip().lower() in {"1", "true", "yes"}:
+                raise
+            _activate_sqlite_fallback(exc)
 
     if app.config.get("IS_PRODUCTION") and app.config.get("SECRET_KEY") == app.config.get("DEFAULT_SECRET_KEY"):
         raise RuntimeError("SECRET_KEY must be configured for production deployments.")
-    
+
     # Enable CORS for frontend integration
     CORS(app, resources={r"/api/*": {"origins": app.config.get("CORS_ORIGINS", [])}})
-    
+
     # Initialize the database with the app context
     db.init_app(app)
-    
+    bcrypt.init_app(app)
+
+    # Configure Flask-Limiter Storage Backend
+    redis_url = app.config.get("REDIS_URL")
+    if redis_url:
+        app.config["RATELIMIT_STORAGE_URI"] = redis_url
+    else:
+        app.config["RATELIMIT_STORAGE_URI"] = "memory://"
+
     # Initialize Flask-Limiter with the app
     limiter.init_app(app)
 
@@ -70,7 +108,7 @@ def create_app(config_class=Config):
         if response.content_type and response.content_type.startswith("application/json"):
             response.headers.setdefault("Cache-Control", "no-store")
         return response
-    
+
     # Global exception handler for handling internal errors cleanly
     @app.errorhandler(500)
     def handle_internal_server_error(e):
@@ -139,12 +177,13 @@ def create_app(config_class=Config):
             "success": database_ok,
             "service": "Greetly Backend API",
             "version": "1.0.0",
-            "environment": "vercel" if app.config.get("DATABASE_MODE") == "vercel-tmp-sqlite" else "server",
+            "environment": "vercel" if str(app.config.get("DATABASE_MODE", "")).startswith("vercel-") else "server",
             "database": {
                 "ok": database_ok,
                 "mode": app.config.get("DATABASE_MODE"),
                 "persistent": app.config.get("DATABASE_MODE") == "external",
                 "configured_external_uri": bool(app.config.get("EXTERNAL_DATABASE_URI")),
+                "fallback_reason": app.config.get("DATABASE_FALLBACK_REASON"),
                 "error": database_error
             },
             "ai": {

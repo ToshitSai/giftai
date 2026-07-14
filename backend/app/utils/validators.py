@@ -3,6 +3,8 @@
 # It checks field formats, required keys, and types to protect route handlers.
 
 import re
+from marshmallow import ValidationError
+from app.schemas import CustomerRegisterSchema, MessageGenerationSchema, MessageEditSchema
 
 PASSWORD_REGEX = re.compile(r'^(?=.*[A-Za-z])(?=.*\d).{8,128}$')
 
@@ -11,19 +13,11 @@ def validate_customer_data(data):
     if not data:
         return "Request body cannot be empty"
         
-    name = data.get('name')
-    email = data.get('email')
-    
-    if not name or not name.strip():
-        return "Name is a required field"
-    if not email or not email.strip():
-        return "Email is a required field"
-        
-    # Standard email regex validation
-    email_regex = r'^[\w\.-]+@[\w\.-]+\.\w+$'
-    if not re.match(email_regex, email):
-        return "Invalid email format"
-        
+    schema = CustomerRegisterSchema()
+    try:
+        schema.load(data)
+    except ValidationError as err:
+        return f"Validation error: {err.messages}"
     return None
 
 def validate_password_strength(password):
@@ -59,32 +53,11 @@ def validate_message_generation(data):
     if not data:
         return "Request body cannot be empty"
         
-    customer_id = data.get('customer_id')
-    recipient_id = data.get('recipient_id')
-    occasion_id = data.get('occasion_id')
-    tone_id = data.get('tone_id')
-    relationship = data.get('relationship')
-    
-    if not customer_id:
-        return "customer_id is a required field"
-    if not recipient_id:
-        return "recipient_id is a required field"
-    if not occasion_id:
-        return "occasion_id is a required field"
-    if not tone_id:
-        return "tone_id is a required field"
-    if not relationship or not relationship.strip():
-        return "Relationship is a required field"
-        
-    # Type checking
-    if not isinstance(customer_id, int):
-        return "customer_id must be an integer"
-    if not isinstance(recipient_id, int):
-        return "recipient_id must be an integer"
-    if not isinstance(occasion_id, int):
-        return "occasion_id must be an integer"
-    if not isinstance(tone_id, int):
-        return "tone_id must be an integer"
+    schema = MessageGenerationSchema()
+    try:
+        schema.load(data)
+    except ValidationError as err:
+        return f"Validation error: {err.messages}"
         
     return None
 
@@ -93,8 +66,10 @@ def validate_message_edit(data):
     if not data:
         return "Request body cannot be empty"
         
-    message_text = data.get('message_text')
-    if not message_text or not message_text.strip():
-        return "message_text cannot be empty"
+    schema = MessageEditSchema()
+    try:
+        schema.load(data)
+    except ValidationError as err:
+        return f"Validation error: {err.messages}"
         
     return None

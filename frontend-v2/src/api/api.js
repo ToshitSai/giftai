@@ -6,7 +6,7 @@ const authFetch = async (endpoint, options = {}) => {
   const { timeoutMs = DEFAULT_TIMEOUT_MS, ...fetchOptions } = options;
   const controller = new AbortController();
   const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
-  
+
   const headers = {
     'Content-Type': 'application/json',
     ...fetchOptions.headers,
@@ -55,7 +55,7 @@ export const api = {
     method: 'POST',
     body: JSON.stringify({ email, password })
   }),
-  
+
   register: (name, email, password) => authFetch('/auth/register', {
     method: 'POST',
     body: JSON.stringify({ name, email, password })
@@ -75,7 +75,7 @@ export const api = {
     method: 'POST',
     body: JSON.stringify({ email, otp, new_password })
   }),
-  
+
   generateMessage: (payload) => authFetch('/create', { // Backend route alias for /messages/generate
     method: 'POST',
     body: JSON.stringify(payload),
@@ -85,6 +85,10 @@ export const api = {
   getMessages: () => authFetch('/messages'),
 
   getDashboardStats: () => authFetch('/dashboard/stats'),
+
+  getCustomers: () => authFetch('/customers'),
+
+  getDiagnostics: () => authFetch('/diagnostics'),
 
   saveMessage: (messageId) => authFetch(`/messages/${messageId}/save`, {
     method: 'POST'

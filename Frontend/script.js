@@ -1,5 +1,5 @@
 // frontend/script.js
-// React SPA migration for GiftAI using UMD CDNs (React 18, React Router v6, Framer Motion v10, and HTM).
+// React SPA migration for Greetly using UMD CDNs (React 18, React Router v6, Framer Motion v10, and HTM).
 // Retains 100% compatibility with the file:// protocol and preserves all backend REST APIs.
 
 // Global monkey-patches to prevent React crashes caused by external DOM mutations (e.g. Lucide icons, browser extensions, or translation tools)
@@ -26,7 +26,7 @@ const html = window.htm.bind(React.createElement);
 // API Service Layer
 const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || !window.location.hostname)
     ? 'http://localhost:5000/api'
-    : 'https://giftai-backend-kpkw.onrender.com/api';
+    : 'https://greetly-backend-kpkw.onrender.com/api';
 
 // Global API Cache for read queries
 const apiCache = new Map();
@@ -36,7 +36,7 @@ const clearApiCache = () => {
 
 const request = async (url, options = {}) => {
     const start = performance.now();
-    const sessionStr = sessionStorage.getItem('GiftAI_session');
+    const sessionStr = sessionStorage.getItem('Greetly_session');
     let headers = options.headers || {};
     if (sessionStr) {
         try {
@@ -60,7 +60,7 @@ const request = async (url, options = {}) => {
     });
     
     if (res.status === 401) {
-        sessionStorage.removeItem('GiftAI_session');
+        sessionStorage.removeItem('Greetly_session');
         window.dispatchEvent(new CustomEvent('auth-failed'));
         const errData = await res.json().catch(() => ({}));
         return { success: false, error: errData.error || 'Session expired. Please log in again.' };
@@ -266,7 +266,7 @@ const pageTransition = {
 // Local Activity Logging Helper
 const logActivity = (type, details) => {
     try {
-        const session = sessionStorage.getItem('GiftAI_session');
+        const session = sessionStorage.getItem('Greetly_session');
         let email = 'system';
         if (session) {
             try {
@@ -274,7 +274,7 @@ const logActivity = (type, details) => {
                 email = parsed.user.email.toLowerCase();
             } catch(e) {}
         }
-        const key = `GiftAI_activities_${email}`;
+        const key = `Greetly_activities_${email}`;
         const activities = JSON.parse(localStorage.getItem(key) || '[]');
         activities.unshift({
             id: Date.now() + Math.random().toString(36).substr(2, 5),
@@ -299,14 +299,14 @@ function AuthProvider({ children }) {
 
     useEffect(() => {
         // Restore session on mount
-        const session = sessionStorage.getItem('GiftAI_session');
+        const session = sessionStorage.getItem('Greetly_session');
         if (session) {
             try {
                 const parsed = JSON.parse(session);
                 setCurrentUser(parsed.user);
                 setRole(parsed.role);
             } catch (e) {
-                sessionStorage.removeItem('GiftAI_session');
+                sessionStorage.removeItem('Greetly_session');
             }
         }
         setLoading(false);
@@ -315,7 +315,7 @@ function AuthProvider({ children }) {
     // Scoped notifications sync
     useEffect(() => {
         if (currentUser) {
-            const key = `GiftAI_notifs_${currentUser.email.toLowerCase()}`;
+            const key = `Greetly_notifs_${currentUser.email.toLowerCase()}`;
             const saved = localStorage.getItem(key);
             if (saved) {
                 try {
@@ -328,7 +328,7 @@ function AuthProvider({ children }) {
                     {
                         id: 'seed-1',
                         type: 'alert',
-                        title: 'Welcome to GiftAI',
+                        title: 'Welcome to Greetly',
                         message: `Welcome to your AI greeting workspace, ${currentUser.name}! Composing templates will log events here.`,
                         read: false,
                         timestamp: new Date().toISOString()
@@ -353,7 +353,7 @@ function AuthProvider({ children }) {
     const saveNotifs = (list) => {
         setNotifications(list);
         if (currentUser) {
-            const key = `GiftAI_notifs_${currentUser.email.toLowerCase()}`;
+            const key = `Greetly_notifs_${currentUser.email.toLowerCase()}`;
             localStorage.setItem(key, JSON.stringify(list));
         }
     };
@@ -390,7 +390,7 @@ function AuthProvider({ children }) {
                 const sessionObj = { user: userObj, role, token };
                 setCurrentUser(userObj);
                 setRole(role);
-                sessionStorage.setItem('GiftAI_session', JSON.stringify(sessionObj));
+                sessionStorage.setItem('Greetly_session', JSON.stringify(sessionObj));
                 return { success: true };
             } else {
                 return { success: false, error: res.error || 'Invalid credentials' };
@@ -408,7 +408,7 @@ function AuthProvider({ children }) {
                 const sessionObj = { user, role, token };
                 setCurrentUser(user);
                 setRole(role);
-                sessionStorage.setItem('GiftAI_session', JSON.stringify(sessionObj));
+                sessionStorage.setItem('Greetly_session', JSON.stringify(sessionObj));
                 return { success: true };
             } else {
                 return { success: false, error: res.error || 'Failed to register account.' };
@@ -422,7 +422,7 @@ function AuthProvider({ children }) {
         setCurrentUser(null);
         setRole(null);
         setNotifications([]);
-        sessionStorage.removeItem('GiftAI_session');
+        sessionStorage.removeItem('Greetly_session');
     };
 
     useEffect(() => {
@@ -480,9 +480,9 @@ function ProtectedRoute({ children, adminOnly = false, userOnly = false }) {
 // AUTHENTICATION split-screen page
 // ============================================================
 // ============================================================
-// GiftAI BRAND LOGO (SVG)
+// Greetly BRAND LOGO (SVG)
 // ============================================================
-function GiftAILogo({ size = 32 }) {
+function GreetlyLogo({ size = 32 }) {
     return html`
         <svg 
             width=${size} 
@@ -514,44 +514,44 @@ function GiftAILogo({ size = 32 }) {
 }
 
 // ============================================================
-// LOCAL STORAGE KEY MIGRATION (GiftAI -> GiftAI)
+// LOCAL STORAGE KEY MIGRATION (Greetly -> Greetly)
 // ============================================================
 (function migrateLocalStorage() {
     try {
         // 1. Session storage session
-        const oldSession = sessionStorage.getItem('GiftAI_session');
-        if (oldSession && !sessionStorage.getItem('GiftAI_session')) {
-            sessionStorage.setItem('GiftAI_session', oldSession);
-            sessionStorage.removeItem('GiftAI_session');
+        const oldSession = sessionStorage.getItem('Greetly_session');
+        if (oldSession && !sessionStorage.getItem('Greetly_session')) {
+            sessionStorage.setItem('Greetly_session', oldSession);
+            sessionStorage.removeItem('Greetly_session');
         }
         
         // 2. Deleted messages
-        const oldDeleted = localStorage.getItem('GiftAI_deleted_messages');
-        if (oldDeleted && !localStorage.getItem('GiftAI_deleted_messages')) {
-            localStorage.setItem('GiftAI_deleted_messages', oldDeleted);
-            localStorage.removeItem('GiftAI_deleted_messages');
+        const oldDeleted = localStorage.getItem('Greetly_deleted_messages');
+        if (oldDeleted && !localStorage.getItem('Greetly_deleted_messages')) {
+            localStorage.setItem('Greetly_deleted_messages', oldDeleted);
+            localStorage.removeItem('Greetly_deleted_messages');
         }
 
         // 3. Favorites list
-        const oldFavs = localStorage.getItem('GiftAI_fav_messages');
-        if (oldFavs && !localStorage.getItem('GiftAI_fav_messages')) {
-            localStorage.setItem('GiftAI_fav_messages', oldFavs);
-            localStorage.removeItem('GiftAI_fav_messages');
+        const oldFavs = localStorage.getItem('Greetly_fav_messages');
+        if (oldFavs && !localStorage.getItem('Greetly_fav_messages')) {
+            localStorage.setItem('Greetly_fav_messages', oldFavs);
+            localStorage.removeItem('Greetly_fav_messages');
         }
 
         // 4. User notifications and activities
         for (let i = 0; i < localStorage.length; i++) {
             const key = localStorage.key(i);
             if (key) {
-                if (key.startsWith('giftai_notifs_')) {
-                    const newKey = key.replace('giftai_notifs_', 'GiftAI_notifs_');
+                if (key.startsWith('greetly_notifs_')) {
+                    const newKey = key.replace('greetly_notifs_', 'Greetly_notifs_');
                     if (!localStorage.getItem(newKey)) {
                         localStorage.setItem(newKey, localStorage.getItem(key));
                     }
                     localStorage.removeItem(key);
                 }
-                if (key.startsWith('giftai_activities_')) {
-                    const newKey = key.replace('giftai_activities_', 'GiftAI_activities_');
+                if (key.startsWith('greetly_activities_')) {
+                    const newKey = key.replace('greetly_activities_', 'Greetly_activities_');
                     if (!localStorage.getItem(newKey)) {
                         localStorage.setItem(newKey, localStorage.getItem(key));
                     }
@@ -1409,7 +1409,7 @@ function ForgotPasswordPage() {
                 <div class="aurora-glow glow-1"></div>
                 <div class="aurora-glow glow-2"></div>
                 <div class="auth-brand">
-                    <div class="logo-mark" style=${{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}><${GiftAILogo} size=${32} /></div>
+                    <div class="logo-mark" style=${{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}><${GreetlyLogo} size=${32} /></div>
                     <span>Wish<span>Forge</span></span>
                 </div>
                 <h1>Security & Recovery Portal</h1>
@@ -1604,22 +1604,22 @@ function AppContent() {
     
     const [occasions, setOccasions] = useState(() => {
         try {
-            return JSON.parse(localStorage.getItem('GiftAI_cached_occasions') || '[]');
+            return JSON.parse(localStorage.getItem('Greetly_cached_occasions') || '[]');
         } catch(e) { return []; }
     });
     const [tones, setTones] = useState(() => {
         try {
-            return JSON.parse(localStorage.getItem('GiftAI_cached_tones') || '[]');
+            return JSON.parse(localStorage.getItem('Greetly_cached_tones') || '[]');
         } catch(e) { return []; }
     });
     const [recipients, setRecipients] = useState(() => {
         try {
-            return JSON.parse(localStorage.getItem('GiftAI_cached_recipients') || '[]');
+            return JSON.parse(localStorage.getItem('Greetly_cached_recipients') || '[]');
         } catch(e) { return []; }
     });
     const [stats, setStats] = useState(() => {
         try {
-            return JSON.parse(localStorage.getItem('GiftAI_cached_stats') || 'null');
+            return JSON.parse(localStorage.getItem('Greetly_cached_stats') || 'null');
         } catch(e) { return null; }
     });
     const [isPaletteOpen, setIsPaletteOpen] = useState(false);
@@ -1649,14 +1649,14 @@ function AppContent() {
 
     const [staticLoaded, setStaticLoaded] = useState(() => {
         try {
-            const occ = localStorage.getItem('GiftAI_cached_occasions');
-            const tn = localStorage.getItem('GiftAI_cached_tones');
+            const occ = localStorage.getItem('Greetly_cached_occasions');
+            const tn = localStorage.getItem('Greetly_cached_tones');
             return !!(occ && tn);
         } catch(e) { return false; }
     });
     const [customersList, setCustomersList] = useState(() => {
         try {
-            return JSON.parse(localStorage.getItem('GiftAI_cached_customers') || '[]');
+            return JSON.parse(localStorage.getItem('Greetly_cached_customers') || '[]');
         } catch(e) { return []; }
     });
 
@@ -1698,11 +1698,11 @@ function AppContent() {
             
             if (statsRes.success && statsRes.data) {
                 setStats(statsRes.data);
-                localStorage.setItem('GiftAI_cached_stats', JSON.stringify(statsRes.data));
+                localStorage.setItem('Greetly_cached_stats', JSON.stringify(statsRes.data));
             }
 
-            localStorage.setItem('GiftAI_cached_occasions', JSON.stringify(occData));
-            localStorage.setItem('GiftAI_cached_tones', JSON.stringify(toneData));
+            localStorage.setItem('Greetly_cached_occasions', JSON.stringify(occData));
+            localStorage.setItem('Greetly_cached_tones', JSON.stringify(toneData));
 
             let custData = [];
             if (role === 'admin') {
@@ -1729,7 +1729,7 @@ function AppContent() {
                 custData = currentUser ? [currentUser] : [];
             }
             setCustomersList(custData);
-            localStorage.setItem('GiftAI_cached_customers', JSON.stringify(custData));
+            localStorage.setItem('Greetly_cached_customers', JSON.stringify(custData));
             setStaticLoaded(true);
             return custData;
         } catch (err) {
@@ -1769,7 +1769,7 @@ function AppContent() {
                 filteredRecipients = filteredRecipients.filter(r => r && r.customer_id === targetCustId);
             }
             setRecipients(filteredRecipients);
-            localStorage.setItem('GiftAI_cached_recipients', JSON.stringify(filteredRecipients));
+            localStorage.setItem('Greetly_cached_recipients', JSON.stringify(filteredRecipients));
         } catch (err) {
             console.error("Error loading workspace recipients:", err);
         }
@@ -1872,10 +1872,10 @@ function ForceResetPasswordModal() {
             if (res.success) {
                 showToast("Password updated successfully!");
                 // Update local session
-                const session = JSON.parse(sessionStorage.getItem('GiftAI_session') || '{}');
+                const session = JSON.parse(sessionStorage.getItem('Greetly_session') || '{}');
                 if (session.user) {
                     session.user.password_reset_required = false;
-                    sessionStorage.setItem('GiftAI_session', JSON.stringify(session));
+                    sessionStorage.setItem('Greetly_session', JSON.stringify(session));
                 }
                 setCurrentUser(prev => ({
                     ...prev,
@@ -2143,7 +2143,7 @@ function Sidebar({ isOpen, onClose }) {
         <aside class="sidebar ${isOpen ? 'open' : ''} ${isCollapsed ? 'collapsed' : ''}" id="sidebar">
             <div class="sidebar-header">
                 <div class="logo-container">
-                    <div class="logo-mark" style=${{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}><${GiftAILogo} size=${32} /></div>
+                    <div class="logo-mark" style=${{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}><${GreetlyLogo} size=${32} /></div>
                     <span class="logo-text">Wish<span>Forge</span></span>
                 </div>
                 <button class="sidebar-collapse-toggle" onClick=${() => setIsCollapsed(!isCollapsed)} title=${isCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'} style=${{ display: 'inline-flex' }}>
@@ -2489,7 +2489,7 @@ function DashboardPage() {
     };
 
     const processWorkspaceStats = (list) => {
-        const deletedIds = JSON.parse(localStorage.getItem('GiftAI_deleted_messages') || '[]');
+        const deletedIds = JSON.parse(localStorage.getItem('Greetly_deleted_messages') || '[]');
         const activeList = list.filter(m => !deletedIds.includes(m.id));
         
         // Map names from context lists for activeList
@@ -2558,7 +2558,7 @@ function DashboardPage() {
         setCompletedRequests(completedReqs);
 
         // Favorites Count
-        const favs = JSON.parse(localStorage.getItem('GiftAI_fav_messages') || '[]');
+        const favs = JSON.parse(localStorage.getItem('Greetly_fav_messages') || '[]');
         const activeFavs = mappedActiveList.filter(m => favs.includes(m.id)).length;
         setFavCount(activeFavs);
 
@@ -2798,7 +2798,7 @@ function RecentActivityWidget({ limit = 5 }) {
 
     const load = () => {
         const email = currentUser?.email?.toLowerCase() || 'system';
-        const key = `GiftAI_activities_${email}`;
+        const key = `Greetly_activities_${email}`;
         const list = JSON.parse(localStorage.getItem(key) || '[]');
         setActivities(list.slice(0, limit));
     };
@@ -3034,7 +3034,7 @@ function GeneratePage() {
             setNote(msg.extra_note || '');
             setGeneratedMsg(msg);
             setEditText(msg.message_text || '');
-            setIsFav(JSON.parse(localStorage.getItem('GiftAI_fav_messages') || '[]').includes(msg.id));
+            setIsFav(JSON.parse(localStorage.getItem('Greetly_fav_messages') || '[]').includes(msg.id));
             setEditMode(false);
             window.history.replaceState({}, document.title);
         }
@@ -3258,7 +3258,7 @@ function GeneratePage() {
 
     const handleFavToggle = async () => {
         if (!generatedMsg) return;
-        const favs = JSON.parse(localStorage.getItem('GiftAI_fav_messages') || '[]');
+        const favs = JSON.parse(localStorage.getItem('Greetly_fav_messages') || '[]');
         const idx = favs.indexOf(generatedMsg.id);
         const shouldBeFav = idx === -1;
         let newFavs;
@@ -3273,7 +3273,7 @@ function GeneratePage() {
             showToast("Removed from Favorites");
             logActivity('unfavorite', `Message for ${generatedMsg.recipient_name} removed from favorites`);
         }
-        localStorage.setItem('GiftAI_fav_messages', JSON.stringify(newFavs));
+        localStorage.setItem('Greetly_fav_messages', JSON.stringify(newFavs));
         
         setTimeout(() => {
             const favBtn = document.querySelector('.action-btn.fav-btn');
@@ -3294,7 +3294,7 @@ function GeneratePage() {
         } catch (e) {
             console.error("Favorite sync failed", e);
             showToast("Failed to sync favorite with server.", true);
-            localStorage.setItem('GiftAI_fav_messages', JSON.stringify(favs));
+            localStorage.setItem('Greetly_fav_messages', JSON.stringify(favs));
             setIsFav(!shouldBeFav);
         }
     };
@@ -3305,7 +3305,7 @@ function GeneratePage() {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `GiftAI_Message_${recipient}.txt`;
+        a.download = `Greetly_Message_${recipient}.txt`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -3658,7 +3658,7 @@ function MessageRequestsPage() {
             const res = await ApiService.getMessages(q);
             if (res.success) {
                 let list = res.data || [];
-                const deletedIds = JSON.parse(localStorage.getItem('GiftAI_deleted_messages') || '[]');
+                const deletedIds = JSON.parse(localStorage.getItem('Greetly_deleted_messages') || '[]');
                 list = list.filter(m => !deletedIds.includes(m.id));
 
                 // Map names from context lists
@@ -3711,9 +3711,9 @@ function MessageRequestsPage() {
 
     const handleDelete = (id, recipient) => {
         if (confirm("Are you sure you want to delete this message request?")) {
-            const deleted = JSON.parse(localStorage.getItem('GiftAI_deleted_messages') || '[]');
+            const deleted = JSON.parse(localStorage.getItem('Greetly_deleted_messages') || '[]');
             deleted.push(id);
-            localStorage.setItem('GiftAI_deleted_messages', JSON.stringify(deleted));
+            localStorage.setItem('Greetly_deleted_messages', JSON.stringify(deleted));
             showToast("Request deleted successfully.");
             fetchRequests();
             logActivity('delete', `Request for ${recipient || 'customer'} deleted`);
@@ -3923,7 +3923,7 @@ function SavedMessagesPage() {
     }, []);
 
     // Optimistic UI Favorite cache and lazy rendering limits
-    const [localFavs, setLocalFavs] = useState(() => JSON.parse(localStorage.getItem('GiftAI_fav_messages') || '[]'));
+    const [localFavs, setLocalFavs] = useState(() => JSON.parse(localStorage.getItem('Greetly_fav_messages') || '[]'));
     const [visibleLimit, setVisibleLimit] = useState(10);
 
     const filteredMessages = useMemo(() => {
@@ -3936,7 +3936,7 @@ function SavedMessagesPage() {
     }, [messages, search]);
 
     const processSavedData = (list, totalCount) => {
-        const deletedIds = JSON.parse(localStorage.getItem('GiftAI_deleted_messages') || '[]');
+        const deletedIds = JSON.parse(localStorage.getItem('Greetly_deleted_messages') || '[]');
         
         // Locally filter out deleted cards
         let filteredList = list.filter(m => !deletedIds.includes(m.id));
@@ -3956,10 +3956,10 @@ function SavedMessagesPage() {
 
         const dbFavs = filteredList.filter(m => m.is_favorite).map(m => m.id);
         const currentBatchIds = filteredList.map(m => m.id);
-        const localFavsStorage = JSON.parse(localStorage.getItem('GiftAI_fav_messages') || '[]');
+        const localFavsStorage = JSON.parse(localStorage.getItem('Greetly_fav_messages') || '[]');
         const remainingFavs = localFavsStorage.filter(id => !currentBatchIds.includes(id) || dbFavs.includes(id));
         const updatedFavs = Array.from(new Set([...remainingFavs, ...dbFavs]));
-        localStorage.setItem('GiftAI_fav_messages', JSON.stringify(updatedFavs));
+        localStorage.setItem('Greetly_fav_messages', JSON.stringify(updatedFavs));
         setLocalFavs(updatedFavs);
 
         setMessages(filteredList);
@@ -4067,7 +4067,7 @@ function SavedMessagesPage() {
 
     // Optimistic UI toggle favorites
     const handleFavToggle = async (id, recipient) => {
-        const favs = JSON.parse(localStorage.getItem('GiftAI_fav_messages') || '[]');
+        const favs = JSON.parse(localStorage.getItem('Greetly_fav_messages') || '[]');
         const idx = favs.indexOf(id);
         let newFavs;
         const isCurrentlyFav = idx !== -1;
@@ -4084,7 +4084,7 @@ function SavedMessagesPage() {
         }
 
         // Cache state instantly
-        localStorage.setItem('GiftAI_fav_messages', JSON.stringify(newFavs));
+        localStorage.setItem('Greetly_fav_messages', JSON.stringify(newFavs));
         setLocalFavs(newFavs);
 
         // Async background synchronization
@@ -4094,7 +4094,7 @@ function SavedMessagesPage() {
             console.error("Favorite backend sync failed", e);
             showToast("Failed to sync favorite with server.", true);
             // Revert state
-            localStorage.setItem('GiftAI_fav_messages', JSON.stringify(favs));
+            localStorage.setItem('Greetly_fav_messages', JSON.stringify(favs));
             setLocalFavs(favs);
         }
     };
@@ -4120,9 +4120,9 @@ function SavedMessagesPage() {
 
     const handleDelete = (id, recipient) => {
         if (confirm("Are you sure you want to delete this greeting template?")) {
-            const deleted = JSON.parse(localStorage.getItem('GiftAI_deleted_messages') || '[]');
+            const deleted = JSON.parse(localStorage.getItem('Greetly_deleted_messages') || '[]');
             deleted.push(id);
-            localStorage.setItem('GiftAI_deleted_messages', JSON.stringify(deleted));
+            localStorage.setItem('Greetly_deleted_messages', JSON.stringify(deleted));
             showToast("Template deleted successfully.");
             addNotification('alert', 'Template Deleted', `Saved template for ${recipient} has been deleted.`);
             fetchSaved();
@@ -4375,7 +4375,7 @@ function FavoritesPage() {
     }, []);
 
     const processFavoritesData = (list, totalCount) => {
-        const deletedIds = JSON.parse(localStorage.getItem('GiftAI_deleted_messages') || '[]');
+        const deletedIds = JSON.parse(localStorage.getItem('Greetly_deleted_messages') || '[]');
         
         // Locally filter out deleted cards
         let filteredList = list.filter(m => !deletedIds.includes(m.id));
@@ -4478,9 +4478,9 @@ function FavoritesPage() {
                 logActivity('unfavorite', `Message for ${recipient} removed from favorites`);
                 
                 // Update local storage cache as well
-                const favs = JSON.parse(localStorage.getItem('GiftAI_fav_messages') || '[]');
+                const favs = JSON.parse(localStorage.getItem('Greetly_fav_messages') || '[]');
                 const updatedFavs = favs.filter(fid => fid !== id);
-                localStorage.setItem('GiftAI_fav_messages', JSON.stringify(updatedFavs));
+                localStorage.setItem('Greetly_fav_messages', JSON.stringify(updatedFavs));
                 
                 // Optimistically remove from list
                 setMessages(prev => prev.filter(m => m.id !== id));
@@ -4511,9 +4511,9 @@ function FavoritesPage() {
 
     const handleDelete = (id, recipient) => {
         if (confirm("Are you sure you want to delete this greeting template?")) {
-            const deleted = JSON.parse(localStorage.getItem('GiftAI_deleted_messages') || '[]');
+            const deleted = JSON.parse(localStorage.getItem('Greetly_deleted_messages') || '[]');
             deleted.push(id);
-            localStorage.setItem('GiftAI_deleted_messages', JSON.stringify(deleted));
+            localStorage.setItem('Greetly_deleted_messages', JSON.stringify(deleted));
             showToast("Template deleted successfully.");
             addNotification('alert', 'Template Deleted', `Saved template for ${recipient} has been deleted.`);
             setMessages(prev => prev.filter(m => m.id !== id));
@@ -4764,7 +4764,7 @@ function HistoryPage() {
             const res = await ApiService.getMessages(q);
             if (res.success) {
                 let list = res.data || [];
-                const deletedIds = JSON.parse(localStorage.getItem('GiftAI_deleted_messages') || '[]');
+                const deletedIds = JSON.parse(localStorage.getItem('Greetly_deleted_messages') || '[]');
                 
                 // Exclude locally deleted messages
                 list = list.filter(m => !deletedIds.includes(m.id));
@@ -5280,13 +5280,13 @@ function AboutPage() {
             <div class="panel-title-area" style=${{ textAlign: 'center', marginBottom: '3rem' }}>
                 <div style=${{ maxWidth: '720px', margin: '0 auto' }}>
                     <h1 style=${{ fontSize: '2.5rem', fontWeight: 800, marginBottom: '0.8rem', background: 'linear-gradient(135deg, var(--color-primary), var(--color-secondary))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                        About GiftAI
+                        About Greetly
                     </h1>
                     <p style=${{ fontSize: '1.25rem', color: 'var(--text-main)', fontWeight: 600, marginBottom: '1rem' }}>
                         AI-powered personalized greeting message generation for every occasion.
                     </p>
                     <p style=${{ color: 'var(--text-muted)', lineHeight: '1.6' }}>
-                        GiftAI helps users quickly generate meaningful, personalized greeting messages using Artificial Intelligence. Say goodbye to writer's block and create thoughtful messages that resonate with your loved ones, colleagues, and friends.
+                        Greetly helps users quickly generate meaningful, personalized greeting messages using Artificial Intelligence. Say goodbye to writer's block and create thoughtful messages that resonate with your loved ones, colleagues, and friends.
                     </p>
                 </div>
             </div>
@@ -5298,7 +5298,7 @@ function AboutPage() {
                             <i data-lucide="info" style=${{ verticalAlign: 'middle', marginRight: '8px' }}></i> Project Overview
                         </h2>
                         <p style=${{ color: 'var(--text-main)', lineHeight: '1.6', marginBottom: '1rem' }}>
-                            GiftAI is an AI-powered greeting message platform that helps users generate personalized messages for birthdays, anniversaries, festivals, thank-you notes, corporate greetings, and many other occasions.
+                            Greetly is an AI-powered greeting message platform that helps users generate personalized messages for birthdays, anniversaries, festivals, thank-you notes, corporate greetings, and many other occasions.
                         </p>
                         <p style=${{ color: 'var(--text-main)', lineHeight: '1.6' }}>
                             Instead of spending time writing messages manually, users simply provide recipient details, relationship, occasion, tone, and optional context, and AI generates a thoughtful and unique greeting within seconds.
@@ -5421,7 +5421,7 @@ function AboutPage() {
                     <i data-lucide="cpu" style=${{ verticalAlign: 'middle', marginRight: '8px' }}></i> How AI Generation Works
                 </h2>
                 <p style=${{ color: 'var(--text-main)', lineHeight: '1.6', marginBottom: '1.5rem' }}>
-                    GiftAI connects users' preferences to state-of-the-art LLMs to produce contextualized responses. Here is a look behind the curtain:
+                    Greetly connects users' preferences to state-of-the-art LLMs to produce contextualized responses. Here is a look behind the curtain:
                 </p>
                 <div style=${{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem' }}>
                     <div style=${{ background: 'rgba(255, 255, 255, 0.02)', padding: '1rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }}>
@@ -5451,7 +5451,7 @@ function AboutPage() {
                     <div class="glass-card" style=${{ padding: '1.5rem', position: 'relative' }}>
                         <div style=${{ fontSize: '2.5rem', fontWeight: 900, color: 'var(--border-hover)', position: 'absolute', top: '10px', right: '15px' }}>01</div>
                         <h3 style=${{ fontSize: '1.1rem', marginBottom: '0.8rem', color: 'var(--color-primary)' }}>Sign In</h3>
-                        <p style=${{ color: 'var(--text-muted)', fontSize: '0.9rem', lineHeight: '1.5' }}>Sign in to your private GiftAI account to access your workspace preferences.</p>
+                        <p style=${{ color: 'var(--text-muted)', fontSize: '0.9rem', lineHeight: '1.5' }}>Sign in to your private Greetly account to access your workspace preferences.</p>
                     </div>
 
                     <div class="glass-card" style=${{ padding: '1.5rem', position: 'relative' }}>
@@ -5463,7 +5463,7 @@ function AboutPage() {
                     <div class="glass-card" style=${{ padding: '1.5rem', position: 'relative' }}>
                         <div style=${{ fontSize: '2.5rem', fontWeight: 900, color: 'var(--border-hover)', position: 'absolute', top: '10px', right: '15px' }}>03</div>
                         <h3 style=${{ fontSize: '1.1rem', marginBottom: '0.8rem', color: 'var(--color-primary)' }}>AI Synthesis</h3>
-                        <p style=${{ color: 'var(--text-muted)', fontSize: '0.9rem', lineHeight: '1.5' }}>GiftAI's prompt orchestration engine queries the AI to write your message.</p>
+                        <p style=${{ color: 'var(--text-muted)', fontSize: '0.9rem', lineHeight: '1.5' }}>Greetly's prompt orchestration engine queries the AI to write your message.</p>
                     </div>
 
                     <div class="glass-card" style=${{ padding: '1.5rem', position: 'relative' }}>
@@ -5475,7 +5475,7 @@ function AboutPage() {
             </div>
 
             <div style=${{ borderTop: '1px solid var(--border-color)', paddingTop: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-                <strong style=${{ color: 'var(--text-main)', fontSize: '1.2rem', display: 'block', marginBottom: '0.3rem' }}>GiftAI</strong>
+                <strong style=${{ color: 'var(--text-main)', fontSize: '1.2rem', display: 'block', marginBottom: '0.3rem' }}>Greetly</strong>
                 <p style=${{ fontSize: '0.9rem', fontStyle: 'italic', marginBottom: '0.5rem' }}>"Crafting thoughtful messages with the power of Artificial Intelligence."</p>
             </div>
         </${motion.div}>

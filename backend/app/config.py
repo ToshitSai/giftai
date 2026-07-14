@@ -22,27 +22,28 @@ class Config:
     SECRET_KEY = os.getenv('SECRET_KEY') or (
         secrets.token_urlsafe(32) if not IS_PRODUCTION else DEFAULT_SECRET_KEY
     )
-    TOKEN_SALT = os.getenv('TOKEN_SALT', 'giftai-auth-token')
+    TOKEN_SALT = os.getenv('TOKEN_SALT', 'greetly-auth-token')
     TOKEN_MAX_AGE_SECONDS = int(os.getenv('TOKEN_MAX_AGE_SECONDS', '86400'))
 
     # Administrator Account Credentials
     ADMIN_EMAIL = os.getenv('ADMIN_EMAIL')
     ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD')
 
-    # Rate Limiting Configuration
-    LIMIT_AI_GENERATION = os.getenv('LIMIT_AI_GENERATION', '10 per minute')
-    LIMIT_AUTH = os.getenv('LIMIT_AUTH', '10 per 5 minutes')
+    # Rate Limiting & Redis Configuration
+    REDIS_URL = os.getenv('REDIS_URL')
+
+    LIMIT_AI_GENERATION = os.getenv('LIMIT_AI_GENERATION', '20 per hour')
+    LIMIT_AUTH = os.getenv('LIMIT_AUTH', '3 per hour')
     LIMIT_ADMIN = os.getenv('LIMIT_ADMIN', '30 per minute')
     CORS_ORIGINS = [
         origin.strip()
         for origin in os.getenv(
             'CORS_ORIGINS',
-            'https://giftai-bice.vercel.app,http://localhost:5173,http://127.0.0.1:5173'
+            'https://greetly-bice.vercel.app,http://localhost:5173,http://127.0.0.1:5173'
         ).split(',')
         if origin.strip()
     ]
     MAX_CONTENT_LENGTH = int(os.getenv('MAX_CONTENT_LENGTH', str(1024 * 1024)))
-
     # Detect if we are in development/debug mode
     _flask_env = os.getenv('FLASK_ENV', 'development').lower()
     _flask_debug = os.getenv('FLASK_DEBUG', 'False').lower() in ['true', '1', 't']
@@ -54,12 +55,10 @@ class Config:
         LIMIT_VALIDATE_OTP = os.getenv('LIMIT_VALIDATE_OTP', '100 per minute')
         LIMIT_RESET_PASSWORD = os.getenv('LIMIT_RESET_PASSWORD', '100 per minute')
     else:
-        LIMIT_FORGOT_PASSWORD = os.getenv('LIMIT_FORGOT_PASSWORD', '5 per 15 minutes')
-        LIMIT_LOGIN = os.getenv('LIMIT_LOGIN', '5 per 15 minutes')
+        LIMIT_FORGOT_PASSWORD = os.getenv('LIMIT_FORGOT_PASSWORD', '3 per hour')
+        LIMIT_LOGIN = os.getenv('LIMIT_LOGIN', '5 per minute')
         LIMIT_VALIDATE_OTP = os.getenv('LIMIT_VALIDATE_OTP', '20 per 15 minutes')
         LIMIT_RESET_PASSWORD = os.getenv('LIMIT_RESET_PASSWORD', '10 per 15 minutes')
-
-
 
     # Database Configuration
     DB_USER = os.getenv('DB_USER', 'root')
@@ -101,7 +100,7 @@ class Config:
         SQLALCHEMY_DATABASE_URI = EXTERNAL_DATABASE_URI
         DATABASE_MODE = 'external'
     elif os.getenv('VERCEL'):
-        sqlite_dir = os.path.join(tempfile.gettempdir(), 'giftai')
+        sqlite_dir = os.path.join(tempfile.gettempdir(), 'greetly')
         os.makedirs(sqlite_dir, exist_ok=True)
         SQLALCHEMY_DATABASE_URI = f"sqlite:///{os.path.join(sqlite_dir, 'app.db')}"
         DATABASE_MODE = 'vercel-tmp-sqlite'
@@ -135,4 +134,4 @@ class Config:
     BREVO_SENDER_EMAIL = os.getenv('BREVO_SENDER_EMAIL', 'hello@greetly.ai')
     BREVO_SENDER_NAME = os.getenv('BREVO_SENDER_NAME', 'Greetly AI')
 
-    
+

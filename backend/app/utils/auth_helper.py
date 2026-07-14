@@ -6,7 +6,7 @@ from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
 def get_serializer():
     return URLSafeTimedSerializer(
         current_app.config['SECRET_KEY'],
-        salt=current_app.config.get('TOKEN_SALT', 'giftai-auth-token')
+        salt=current_app.config.get('TOKEN_SALT', 'greetly-auth-token')
     )
 
 def generate_token(user_id, role):
