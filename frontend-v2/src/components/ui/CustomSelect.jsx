@@ -23,8 +23,8 @@ export function CustomSelect({ options, value, onChange, label }) {
         onClick={() => setIsOpen(!isOpen)}
         className="input-comic bg-white cursor-pointer flex justify-between items-center select-none"
       >
-        <span className="font-body font-bold">{value}</span>
-        <motion.div animate={{ rotate: isOpen ? 180 : 0 }}>
+        <span className="font-body font-bold text-sm md:text-base truncate flex-1 text-left mr-2">{value}</span>
+        <motion.div animate={{ rotate: isOpen ? 180 : 0 }} className="flex-shrink-0">
           <ChevronDown size={20} />
         </motion.div>
       </div>
@@ -36,7 +36,7 @@ export function CustomSelect({ options, value, onChange, label }) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.2 }}
-            className="absolute top-[100%] left-0 w-full mt-2 bg-white border-[3px] border-brand-black rounded-lg shadow-comic-sm z-50 overflow-hidden flex flex-col"
+            className="absolute top-[100%] left-0 min-w-full mt-2 bg-white border-[3px] border-brand-black rounded-lg shadow-comic-sm z-50 overflow-hidden flex flex-col"
           >
             {options.map((option, idx) => (
               <div
@@ -45,7 +45,7 @@ export function CustomSelect({ options, value, onChange, label }) {
                   onChange(option);
                   setIsOpen(false);
                 }}
-                className={`px-4 py-3 cursor-pointer font-bold font-body transition-colors border-b-[3px] border-brand-black/20 last:border-b-0
+                className={`px-3 py-2 cursor-pointer font-bold font-body text-sm whitespace-nowrap transition-colors border-b-2 border-brand-black/20 last:border-b-0
                   ${value === option ? 'bg-brand-yellow text-brand-black' : 'hover:bg-brand-purple hover:text-white text-brand-black'}`}
               >
                 {option}
