@@ -1,6 +1,13 @@
 # 💌 Greetly - The AI Greeting Card Generator
 
+[![CI](https://github.com/ToshitSai/greetly/actions/workflows/ci.yml/badge.svg)](https://github.com/ToshitSai/greetly/actions)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Live Demo](https://img.shields.io/badge/demo-online-green.svg)](https://toshit-greetly.vercel.app)
+
 *Create the perfect, personalized greeting message in seconds using the magic of LLaMA 3.3.*
+
+## 💡 Why I built this
+Finding the right words for a greeting card can be surprisingly difficult and time-consuming. I built Greetly to solve this exact problem, using the power of LLaMA 3.3 to instantly generate warm, personalized messages for any occasion. It's designed to take the stress out of writing while keeping the sentiment genuine.
 
 ---
 
@@ -28,6 +35,11 @@
 **Services:**
 - **Groq API**: High-speed AI inference (using `llama-3.3-70b-versatile`).
 - **Brevo API**: Reliable transactional email delivery for OTPs.
+
+## 📁 Project Structure
+- `/backend`: Python Flask backend serving the REST API.
+- `/frontend-v2`: React 18 frontend built with Vite.
+- `/docs`: Documentation and reference materials.
 
 ## 📐 Architecture Diagram
 
@@ -89,6 +101,22 @@ npm run dev
 ```
 Access the application at `http://localhost:5173`.
 
+## 🧪 Testing
+
+**Backend Tests:**
+Run the test suite using pytest with coverage:
+```bash
+cd backend
+python -m pytest tests/ --cov=app
+```
+
+**Frontend Tests:**
+Run the Vitest test suite:
+```bash
+cd frontend-v2
+npm test
+```
+
 ## ⚙️ Environment Variables
 
 | Variable | Description | Default / Example |
@@ -127,3 +155,9 @@ Toggle the favorited status of a generated message (Requires JWT).
 
 ### 4. **System Health:** `/api/health` (GET)
 Returns the connectivity status and quota health of the upstream AI Provider (Groq). Does not require authentication.
+
+## 🚧 Known Limitations / Roadmap
+- **Single AI Provider**: Currently depends solely on the Groq API for generation.
+- **Cold Starts**: Free-tier hosting on Render may result in cold starts for the backend API.
+- **Language**: No multi-language support yet.
+- **Deployments**: No automated deployment previews currently configured.

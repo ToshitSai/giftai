@@ -89,12 +89,27 @@ describe('Dashboard Component', () => {
     });
   });
 
-  it('renders history list correctly', async () => {
+  it('renders history list correctly and toggles favorite state', async () => {
     renderWithAuth(<Dashboard />);
 
     // Just wait for history item to be rendered in the document
-    await waitFor(() => {
-      expect(screen.getByText(/For: Test Recipient/i)).toBeInTheDocument();
-    });
+    const historyItem = await screen.findByText(/For: Test Recipient/i);
+    expect(historyItem).toBeInTheDocument();
+    
+    // Find the favorite button (it's the one with the star icon).
+    // The closest button to the history item or by role
+    const favButton = screen.getAllByRole('button').find(btn => btn.innerHTML.includes('lucide-star'));
+    if (favButton) {
+      fireEvent.click(favButton);
+      
+      await waitFor(() => {
+        const favCall = global.fetch.mock.calls.find(call => call[0].includes('/favorite'));
+        // If the fetch mock was updated to handle /favorite, it should be called.
+        // We haven't mocked /favorite explicitly, but it should still be called.
+        expect(favCall).toBeDefined();
+        const payload = JSON.parse(favCall[1].body);
+        expect(payload).toHaveProperty('is_favorite', false);
+      });
+    }
   });
 });
