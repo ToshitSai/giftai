@@ -5,7 +5,7 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "https://greetly-backend-kpkw.onrender.com/api/$1"
+      "destination": "https://toshit-greetly-backend.vercel.app/api/$1"
     },
     {
       "source": "/(.*)",
