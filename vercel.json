@@ -1,0 +1,8 @@
+{
+  "buildCommand": "cd frontend-v2 && npm install && npm run build",
+  "outputDirectory": "frontend-v2/dist",
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "https://toshit-greetly-backend.vercel.app/api/$1" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}
