@@ -82,6 +82,9 @@ def create_app(config_class=Config):
     db.init_app(app)
     bcrypt.init_app(app)
 
+    with app.app_context():
+        db.create_all()
+
     # Configure Flask-Limiter Storage Backend
     redis_url = app.config.get("REDIS_URL")
     if redis_url:
