@@ -1,8 +1,17 @@
 {
-  "buildCommand": "cd frontend-v2 && npm install && npm run build",
-  "outputDirectory": "frontend-v2/dist",
-  "rewrites": [
-    { "source": "/api/(.*)", "destination": "https://toshit-greetly-backend.vercel.app/api/$1" },
-    { "source": "/(.*)", "destination": "/index.html" }
+  "version": 2,
+  "builds": [
+    {
+      "src": "frontend-v2/package.json",
+      "use": "@vercel/static-build",
+      "config": { "distDir": "dist" }
+    }
+  ],
+  "routes": [
+    { "src": "/api/(.*)", "dest": "https://toshit-greetly-backend.vercel.app/api/$1" },
+    { "src": "/(assets/.*)", "dest": "/frontend-v2/$1" },
+    { "src": "/(.*)", "dest": "/frontend-v2/$1", "continue": true },
+    { "handle": "filesystem" },
+    { "src": "/(.*)", "dest": "/frontend-v2/index.html" }
   ]
 }
