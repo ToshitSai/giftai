@@ -59,7 +59,7 @@ export default function HeroSection() {
         transition={{ duration: 0.6, ease: "easeOut" }}
         className="max-w-4xl mx-auto flex flex-col items-center"
       >
-        <h1 className="text-4xl sm:text-6xl md:text-8xl font-black uppercase mb-4 sm:mb-6 leading-[1.1] md:leading-none tracking-tight text-white drop-shadow-[3px_3px_0_#0F0A1A] md:drop-shadow-[4px_4px_0_#0F0A1A] px-2">
+        <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-black uppercase mb-4 sm:mb-6 leading-[1.1] md:leading-none tracking-tight text-white drop-shadow-[3px_3px_0_#0F0A1A] md:drop-shadow-[4px_4px_0_#0F0A1A] px-2">
           Words that <span className="text-brand-yellow block sm:inline">POP!</span>
         </h1>
         

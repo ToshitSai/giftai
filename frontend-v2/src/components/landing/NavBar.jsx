@@ -38,7 +38,7 @@ export default function NavBar() {
       </Link>
 
       {/* Desktop Links */}
-      <div className="hidden md:flex items-center gap-8 font-body font-bold text-brand-black">
+      <div className="hidden md:flex items-center gap-4 lg:gap-8 font-body font-bold text-brand-black">
         <motion.button whileHover={{ y: -4 }} whileTap={{ scale: 0.9 }} onClick={(e) => scrollToSection(e, 'how-it-works')} className="hover:text-brand-purple transition-colors">How It Works</motion.button>
         {currentUser ? (
           <>

@@ -41,7 +41,7 @@ export default function PricingSection() {
         </h2>
       </div>
 
-      <div className="grid md:grid-cols-3 gap-8 items-center max-w-5xl mx-auto">
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 items-center max-w-5xl mx-auto">
         {plans.map((plan, i) => (
           <motion.div
             key={i}
@@ -51,7 +51,7 @@ export default function PricingSection() {
             whileTap={{ scale: plan.pop ? 1.05 : 0.95 }}
             viewport={{ once: true }}
             transition={{ duration: 0.3 }}
-            className={`cursor-pointer comic-panel relative p-8 text-brand-black ${plan.color} ${plan.rotate} flex flex-col h-full ${plan.pop ? 'md:scale-110 md:-translate-y-4 border-[6px] shadow-comic-hover z-20' : 'z-10'}`}
+            className={`cursor-pointer comic-panel relative p-8 text-brand-black ${plan.color} ${plan.rotate} flex flex-col h-full ${plan.pop ? 'lg:scale-110 lg:-translate-y-4 border-[6px] shadow-comic-hover z-20' : 'z-10'}`}
           >
             {plan.pop && (
               <motion.div 
