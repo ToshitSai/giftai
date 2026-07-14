@@ -28,27 +28,33 @@ export default function HeroSection() {
   useEffect(() => {
     let index = 0;
     const currentText = sampleGreetings[greetingIndex];
-    let isTyping = true;
+    let isDeleting = false;
+    let timeout;
 
-    const interval = setInterval(() => {
-      if (isTyping) {
-        setTypedText(currentText.substring(0, index));
-        index++;
-        
-        if (index > currentText.length) {
-          isTyping = false;
-          clearInterval(interval);
-          
-          // Pause for 3 seconds, then move to the next greeting
-          setTimeout(() => {
-            setTypedText("");
-            setGreetingIndex((prevIndex) => (prevIndex + 1) % sampleGreetings.length);
-          }, 3000);
+    const type = () => {
+      setTypedText(currentText.substring(0, index));
+
+      if (!isDeleting) {
+        if (index < currentText.length) {
+          index++;
+          timeout = setTimeout(type, 50); // Typing speed
+        } else {
+          isDeleting = true;
+          timeout = setTimeout(type, 3000); // Pause before deleting
+        }
+      } else {
+        if (index > 0) {
+          index--;
+          timeout = setTimeout(type, 30); // Deleting speed
+        } else {
+          setGreetingIndex((prevIndex) => (prevIndex + 1) % sampleGreetings.length);
         }
       }
-    }, 50); // Snappy typing speed
+    };
 
-    return () => clearInterval(interval);
+    timeout = setTimeout(type, 50);
+
+    return () => clearTimeout(timeout);
   }, [greetingIndex]);
 
   return (
