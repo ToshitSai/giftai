@@ -3,7 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { FloatingInput } from '../components/ui/FloatingInput';
 import { TactileButton } from '../components/ui/TactileButton';
 import { Link, useNavigate } from 'react-router-dom';
-import { Sparkles, Copy, LogOut, ArrowLeft, Save, Edit2, RefreshCw } from 'lucide-react';
+import { Sparkles, Copy, LogOut, ArrowLeft, Save, Edit2, RefreshCw, ChevronDown } from 'lucide-react';
+import { CustomSelect } from '../components/ui/CustomSelect';
 import { useAuth } from '../contexts/AuthContext';
 import { api } from '../api/api';
 
@@ -287,47 +288,26 @@ export default function Dashboard() {
               />
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="flex flex-col gap-2">
-                  <label className="font-display font-bold px-2">Relationship</label>
-                  <select 
-                    className="input-comic appearance-none bg-white cursor-pointer"
-                    value={formData.relationship}
-                    onChange={e => setFormData({...formData, relationship: e.target.value})}
-                  >
-                    <option>Friend</option>
-                    <option>Partner</option>
-                    <option>Family</option>
-                    <option>Colleague</option>
-                  </select>
-                </div>
+                <CustomSelect
+                  label="Relationship"
+                  value={formData.relationship}
+                  options={['Friend', 'Partner', 'Family', 'Colleague']}
+                  onChange={val => setFormData({...formData, relationship: val})}
+                />
+                
+                <CustomSelect
+                  label="Occasion"
+                  value={formData.occasion}
+                  options={['Birthday', 'Anniversary', 'Congratulations', 'Just Because']}
+                  onChange={val => setFormData({...formData, occasion: val})}
+                />
 
-                <div className="flex flex-col gap-2">
-                  <label className="font-display font-bold px-2">Occasion</label>
-                  <select 
-                    className="input-comic appearance-none bg-white cursor-pointer"
-                    value={formData.occasion}
-                    onChange={e => setFormData({...formData, occasion: e.target.value})}
-                  >
-                    <option>Birthday</option>
-                    <option>Anniversary</option>
-                    <option>Congratulations</option>
-                    <option>Just Because</option>
-                  </select>
-                </div>
-
-                <div className="flex flex-col gap-2">
-                  <label className="font-display font-bold px-2">Tone</label>
-                  <select 
-                    className="input-comic appearance-none bg-white cursor-pointer"
-                    value={formData.tone}
-                    onChange={e => setFormData({...formData, tone: e.target.value})}
-                  >
-                    <option>Funny</option>
-                    <option>Heartfelt</option>
-                    <option>Casual</option>
-                    <option>Formal</option>
-                  </select>
-                </div>
+                <CustomSelect
+                  label="Tone"
+                  value={formData.tone}
+                  options={['Funny', 'Heartfelt', 'Casual', 'Formal']}
+                  onChange={val => setFormData({...formData, tone: val})}
+                />
               </div>
 
               <div className="flex flex-col gap-2 mt-4">
