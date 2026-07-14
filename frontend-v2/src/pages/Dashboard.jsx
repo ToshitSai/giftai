@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { FloatingInput } from '../components/ui/FloatingInput';
 import { TactileButton } from '../components/ui/TactileButton';
 import { Link, useNavigate } from 'react-router-dom';
-import { Sparkles, Copy, LogOut, ArrowLeft, Save, Edit2, RefreshCw, ChevronDown, Mail } from 'lucide-react';
+import { Sparkles, Copy, LogOut, ArrowLeft, Save, Edit2, RefreshCw, ChevronDown } from 'lucide-react';
 import { CustomSelect } from '../components/ui/CustomSelect';
 import { useAuth } from '../contexts/AuthContext';
 import { api } from '../api/api';
@@ -12,7 +12,7 @@ export default function Dashboard() {
   const [view, setView] = useState('craft'); // 'history', 'craft'
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
-  const [emailModalOpen, setEmailModalOpen] = useState(false);
+
   const [history, setHistory] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -31,10 +31,7 @@ export default function Dashboard() {
     extraNotes: ''
   });
 
-  const [emailData, setEmailData] = useState({
-    email: '',
-    subject: 'A special message just for you!'
-  });
+
 
   useEffect(() => {
     if (!currentUser) {
@@ -92,16 +89,7 @@ export default function Dashboard() {
     }
   };
 
-  const handleSendEmail = async (e) => {
-    e.preventDefault();
-    try {
-      await api.sendEmail(emailData.email, formData.recipientName, result, emailData.subject);
-      setEmailModalOpen(false);
-      alert("Email sent successfully!");
-    } catch (err) {
-      alert("Error sending email: " + err.message);
-    }
-  };
+
 
   const downloadMessage = () => {
     const element = document.createElement("a");
@@ -372,9 +360,7 @@ export default function Dashboard() {
               <TactileButton onClick={handleSaveMessage} disabled={isSaving} variant="secondary" className="w-full sm:flex-1 sm:min-w-[150px] flex items-center justify-center gap-2 !bg-[#06D6A0] !text-brand-black border-[3px]">
                 <Save size={20} /> {isSaving ? "Saving" : "Save"}
               </TactileButton>
-              <TactileButton onClick={() => setEmailModalOpen(true)} variant="secondary" className="w-full sm:flex-1 sm:min-w-[150px] flex items-center justify-center gap-2 !bg-[#FF9F1C] !text-brand-black border-[3px]">
-                <Mail size={20} /> Email
-              </TactileButton>
+
               <TactileButton onClick={handleEditToggle} variant="secondary" className="w-full sm:flex-1 sm:min-w-[150px] flex items-center justify-center gap-2 !bg-brand-yellow !text-brand-black border-[3px]">
                 <Edit2 size={20} /> {isEditing ? "Done" : "Edit"}
               </TactileButton>
@@ -386,55 +372,7 @@ export default function Dashboard() {
         )}
       </AnimatePresence>
 
-      {/* Email Modal */}
-      <AnimatePresence>
-        {emailModalOpen && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand-black/80 backdrop-blur-sm"
-          >
-            <motion.div 
-              initial={{ scale: 0.9, y: 50 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.9, y: 50 }}
-              className="comic-panel p-8 bg-brand-cyan w-full max-w-md relative"
-            >
-              <button 
-                onClick={() => setEmailModalOpen(false)}
-                className="absolute -top-4 right-2 md:-right-4 bg-brand-red text-white w-10 h-10 rounded-full border-4 border-brand-black font-black text-xl flex items-center justify-center shadow-comic-sm z-10 hover:scale-110 transition-transform"
-              >
-                X
-              </button>
-              
-              <h2 className="text-3xl font-black uppercase tracking-wider mb-6">Send Email</h2>
-              
-              <form onSubmit={handleSendEmail} className="flex flex-col gap-6">
-                <FloatingInput 
-                  id="email" 
-                  type="email"
-                  label="Recipient's Email" 
-                  required
-                  value={emailData.email}
-                  onChange={(e) => setEmailData({...emailData, email: e.target.value})}
-                />
-                <FloatingInput 
-                  id="subject" 
-                  label="Subject Line" 
-                  required
-                  value={emailData.subject}
-                  onChange={(e) => setEmailData({...emailData, subject: e.target.value})}
-                />
-                
-                <TactileButton type="submit" variant="primary" className="w-full py-4 mt-2 text-lg">
-                  SEND IT!
-                </TactileButton>
-              </form>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+
     </div>
   );
 }
